@@ -84,11 +84,14 @@ class SportsCog(commands.Cog, name="Sports"):
     async def do_nhl_scores(self, ctx, *, optional_input: str=None):
         """Fetches NHL scores from NHL.com
 
-        [optional_input] can be in the form of a specific team's tricode or a date, or both
+        • [optional_input] can be in the form of a specific team's tricode or a date, or both
+        • You can add "--tz custom timezone" to return results in your timezone. I will remember the last custom timezone you asked for, so there is no need to add it every time.
 
         e.g. nhl bos 2020-08-03
              nhl bos yesterday
              nhl tomorrow
+             nhl --tz US/Pacific
+             nhl --tz pdt bos
         """
 
         mobile_output = False
@@ -283,11 +286,14 @@ class SportsCog(commands.Cog, name="Sports"):
     async def do_mlb_scores(self, ctx, *, optional_input: str=None):
         """Fetches MLB scores from MLB.com
 
-        [optional_input] can be in the form of a specific team's tricode or a date, or both
+        • [optional_input] can be in the form of a specific team's tricode or a date, or both
+        • You can add "--tz custom timezone" to return results in your timezone. I will remember the last custom timezone you asked for, so there is no need to add it every time.
 
         e.g. mlb bos 2020-08-03
              mlb bos yesterday
              mlb tomorrow
+             mlb --tz US/Central
+             mlb --tz cst bos
         """
 
         mobile_output = False
@@ -518,11 +524,14 @@ class SportsCog(commands.Cog, name="Sports"):
     async def do_nba_scores(self, ctx, *, optional_input: str=None):
         """Fetches NBA scores from NBA.com
 
-        [optional_input] can be in the form of a specific team's tricode or a date, or both
+        • [optional_input] can be in the form of a specific team's tricode or a date, or both
+        • You can add "--tz custom timezone" to return results in your timezone. I will remember the last custom timezone you asked for, so there is no need to add it every time.
 
         e.g. nba bos 2020-08-03
              nba bos yesterday
              nba tomorrow
+             nba --tz US/Mountain
+             nba --tz mst bos
         """
 
         mobile_output = False
