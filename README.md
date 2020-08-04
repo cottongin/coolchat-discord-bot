@@ -1,24 +1,16 @@
 # coolchat-discord-bot
 
----
-
 A rather basic Discord bot based on discord.py and cogs to provide custom commands (mostly sports related) to the Cool Chat Discord guild.
-
----
 
 ## Usage
 
 Don't.
-
----
 
 ## Commands
 
 I'd rather you use the built-in help command to read about what commands the bot offers and how to use them.
 
 e.g. `?help` or `?help <command>`
-
----
 
 ## Credits
 
