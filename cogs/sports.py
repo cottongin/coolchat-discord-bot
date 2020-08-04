@@ -52,9 +52,11 @@ class SportsCog(commands.Cog, name="Sports"):
         except:
             self.user_db = {}
 
-        self.NHL_SCOREBOARD_ENDPOINT = ("https://statsapi.web.nhl.com/api/v1/schedule?startDate={}&endDate={}" +
-                                        "&expand=schedule.teams,schedule.linescore,schedule.broadcasts.all,schedule.ticket,schedule.game.content.media.epg" +
-                                        "&leaderCategories=&site=en_nhl&teamId=")
+        self.NHL_SCOREBOARD_ENDPOINT = (
+            "https://statsapi.web.nhl.com/api/v1/schedule?startDate={}&endDate={}"
+            "&expand=schedule.teams,schedule.linescore,schedule.broadcasts.all,"
+            "schedule.ticket,schedule.game.content.media.epg"
+            "&leaderCategories=&site=en_nhl&teamId=")
         self.MLB_SCOREBOARD_ENDPOINT = (
             'https://statsapi.mlb.com/api/v1/schedule'
             '?sportId=1,51&date={}'
@@ -75,17 +77,17 @@ class SportsCog(commands.Cog, name="Sports"):
         self.NHL_TEAMS = self._fetch_teams("NHL")
         self.MLB_TEAMS = self._fetch_teams("MLB")
         self.NBA_TEAMS = self._fetch_teams("NBA")
-        # https://statsapi.web.nhl.com/api/v1/schedule?startDate=2016-12-15&endDate=2016-12-15
-        # &expand=schedule.teams,schedule.linescore,schedule.broadcasts,schedule.ticket,schedule.game.content.media.epg
-        # &leaderCategories=&site=en_nhl&teamId=
 
     @commands.command(name='nhl', aliases=['nhlscores', 'hockey'])
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def do_nhl_scores(self, ctx, *, optional_input: str=None):
         """Fetches NHL scores from NHL.com
 
-        • [optional_input] can be in the form of a specific team's tricode or a date, or both
-        • You can add "--tz custom timezone" to return results in your timezone. I will remember the last custom timezone you asked for, so there is no need to add it every time.
+        • [optional_input] can be in the form of a specific team's tricode 
+            or a date, or both
+        • You can add "--tz custom timezone" to return results in your timezone. 
+            I will remember the last custom timezone you asked for, so there 
+            is no need to add it every time.
 
         e.g. nhl bos 2020-08-03
              nhl bos yesterday
@@ -119,7 +121,8 @@ class SportsCog(commands.Cog, name="Sports"):
                     try:
                         _ = pendulum.timezone(timezone)
                     except:
-                        await ctx.send("Sorry that is an invalid timezone (try one from https://nodatime.org/TimeZones)")
+                        await ctx.send("Sorry that is an invalid timezone "
+                            "(try one from https://nodatime.org/TimeZones)")
                         return
                 if arg.replace("-", "").isdigit():
                     date = arg
@@ -127,14 +130,18 @@ class SportsCog(commands.Cog, name="Sports"):
                     append_team = self.NHL_TEAMS.get(arg.upper()) or ""
                     team = arg.upper()
                 if arg.lower() == "tomorrow":
-                    date = pendulum.tomorrow().in_tz(self.default_other_tz).format("YYYY-MM-DD")
+                    date = pendulum.tomorrow().in_tz(
+                        self.default_other_tz).format("YYYY-MM-DD")
                 elif arg.lower() == "yesterday":
-                    date = pendulum.yesterday().in_tz(self.default_other_tz).format("YYYY-MM-DD")
+                    date = pendulum.yesterday().in_tz(
+                        self.default_other_tz).format("YYYY-MM-DD")
             
             if optional_input.lower() == "tomorrow":
-                date = pendulum.tomorrow().in_tz(self.default_other_tz).format("YYYY-MM-DD")
+                date = pendulum.tomorrow().in_tz(
+                    self.default_other_tz).format("YYYY-MM-DD")
             elif optional_input.lower() == "yesterday":
-                date = pendulum.yesterday().in_tz(self.default_other_tz).format("YYYY-MM-DD")
+                date = pendulum.yesterday().in_tz(
+                    self.default_other_tz).format("YYYY-MM-DD")
         
         url = self.NHL_SCOREBOARD_ENDPOINT.format(date, date) + str(append_team)
         LOGGER.debug("NHL API called for: {}".format(url))
@@ -143,22 +150,25 @@ class SportsCog(commands.Cog, name="Sports"):
         games = data.get('dates', {})
         if not games:
             LOGGER.warn("Something went wrong possibly. (NHL)")
-            await ctx.send("I couldn't find any NHL games for {team}{date}.".format(
-                team="{} on ".format(team) if team else "",
-                date=date
+            await ctx.send(
+                "I couldn't find any NHL games for {team}{date}.".format(
+                    team="{} on ".format(team) if team else "",
+                    date=date
             ))
             return
         else:
             games = games[0].get('games', {})
             if not games:
                 LOGGER.warn("Something went wrong possibly. (NHL)")
-                await ctx.send("I couldn't find any NHL games for {team}{date}.".format(
-                    team="{} on ".format(team) if team else "",
-                    date=date
+                await ctx.send(
+                    "I couldn't find any NHL games for {team}{date}.".format(
+                        team="{} on ".format(team) if team else "",
+                        date=date
                 ))
                 return
 
-        games_date = pendulum.parse(games[0]['gameDate']).in_tz(self.default_other_tz).format('MMM Do \'YY')
+        games_date = pendulum.parse(games[0]['gameDate']).in_tz(
+            self.default_other_tz).format("MMM Do")
         number_of_games = len(games)
         types_of_games = {
             'P': ' **PLAYOFF** ',
@@ -173,8 +183,12 @@ class SportsCog(commands.Cog, name="Sports"):
         mobile_output_string = ""
 
         for game in games:
-            away_team = game['teams']['away']['team']['teamName'] if not mobile_output else game['teams']['away']['team']['abbreviation']
-            home_team = game['teams']['home']['team']['teamName'] if not mobile_output else game['teams']['home']['team']['abbreviation']
+            away_team = game['teams']['away']['team']['teamName'] \
+                if not mobile_output \
+                else game['teams']['away']['team']['abbreviation']
+            home_team = game['teams']['home']['team']['teamName'] \
+                if not mobile_output \
+                else game['teams']['home']['team']['abbreviation']
             a_team_emoji = get(ctx.guild.emojis, name="nhl_"+game['teams']['away']['team']['abbreviation'].lower())
             h_team_emoji = get(ctx.guild.emojis, name="nhl_"+game['teams']['home']['team']['abbreviation'].lower())
             if a_team_emoji:
@@ -234,6 +248,9 @@ class SportsCog(commands.Cog, name="Sports"):
                     status = pendulum.parse(game['gameDate']).in_tz(timezone or user_timezone or self.default_tz).format(
                         "h:mm A zz"
                     )
+                    if int(game['status']['codedGameState']) == 2:
+                        # Pre-game
+                        status += " [Warmup]"
                     if "AM" == pendulum.parse(game['gameDate']).in_tz(self.default_tz).format("A"):
                         status = "Time TBD"
                 except:
@@ -633,6 +650,8 @@ class SportsCog(commands.Cog, name="Sports"):
                 )
                 if game['period']['isHalftime']:
                     time = "__Halftime__"
+                if game['isBuzzerBeater']:
+                    time += " :rotating_light:"
                 if not mobile_output:
                     status = "{} - {} [{}]".format(a_score, h_score, time)
                 else:
@@ -663,6 +682,8 @@ class SportsCog(commands.Cog, name="Sports"):
                     status = pendulum.parse(game['startTimeUTC']).in_tz(timezone or user_timezone or self.default_tz).format(
                         "h:mm A zz"
                     )
+                    if game['isGameActivated']:
+                        status += " [Warmup]"
                 except:
                     status = ""
                 a_score = ""
