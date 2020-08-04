@@ -7,30 +7,15 @@ import pendulum
 
 import logging
 import coloredlogs
+import json
 
 
-# coloredlogs.install()
-# create logger
 LOGGER = logging.getLogger(__name__)
 coloredlogs.install(level='DEBUG', logger=LOGGER,
     fmt="[{asctime}] <{name}> {levelname:>8} | {message}",
     datefmt='%Y-%m-%d %H:%M:%S',
     style='{'
 )
-# LOGGER.setLevel(logging.INFO)
-
-# # create console handler and set level to debug
-# ch = logging.StreamHandler()
-# ch.setLevel(logging.INFO)
-
-# # create formatter
-# formatter = logging.Formatter('[%(asctime)s]\t<%(name)s>\t[%(levelname)s]\t%(message)s', datefmt='%m/%d/%Y %H:%M:%S')
-
-# # add formatter to ch
-# ch.setFormatter(formatter)
-
-# # add ch to logger
-# LOGGER.addHandler(ch)
 
 
 class SportsCog(commands.Cog, name="Sports"):
@@ -39,6 +24,33 @@ class SportsCog(commands.Cog, name="Sports"):
     def __init__(self, bot):
         self.bot = bot
         self.__name__ = __name__
+
+        self.default_tz = "US/Eastern"
+        # ^ If a user doesn't provide a tz what should we use?
+        self.default_now_tz = "US/Pacific" 
+        # ^ When looking for "today's" games we want to look at the last tz
+        # to switch days
+        self.default_other_tz = "US/Eastern"
+        # ^ When looking ahead or behind "today's" games we want to look at the
+        # first tz to switch days... I think. Hence why this is set separately
+        # from self.default_tz
+
+        self.short_tzs = {
+            "edt": "US/Eastern",
+            "est": "US/Eastern",
+            "cdt": "US/Central",
+            "cst": "US/Central",
+            "mst": "US/Mountain",
+            "mdt": "US/Mountain",
+            "pst": "US/Pacific",
+            "pdt": "US/Pacific"
+        }
+
+        try:
+            with open('data/sports_db.json') as f:             
+                self.user_db = json.load(f)
+        except:
+            self.user_db = {}
 
         self.NHL_SCOREBOARD_ENDPOINT = ("https://statsapi.web.nhl.com/api/v1/schedule?startDate={}&endDate={}" +
                                         "&expand=schedule.teams,schedule.linescore,schedule.broadcasts.all,schedule.ticket,schedule.game.content.media.epg" +
@@ -81,29 +93,45 @@ class SportsCog(commands.Cog, name="Sports"):
 
         mobile_output = False
         member = ctx.author
+        member_id = str(member.id)
         if member.is_on_mobile():
             mobile_output = True
 
-        date = pendulum.now().in_tz("US/Pacific").format("YYYY-MM-DD")
+        user_timezone = self.user_db.get(member_id, {}).get('timezone')
+        # LOGGER.debug((user_timezone, self.user_db))
+
+        date = pendulum.now().in_tz(self.default_now_tz).format("YYYY-MM-DD")
         append_team = ""
         team = ""
+        timezone = None
         if optional_input:
             args = optional_input.split()
-            for arg in args:
+            for idx, arg in enumerate(args):
+                if arg == "--tz":
+                    # grab the user-defined timezone
+                    timezone = args[idx + 1]
+                    # see if it's a short-hand timezone first
+                    timezone = self.short_tzs.get(timezone.lower()) or timezone
+                    # now check if it's valid
+                    try:
+                        _ = pendulum.timezone(timezone)
+                    except:
+                        await ctx.send("Sorry that is an invalid timezone (try one from https://nodatime.org/TimeZones)")
+                        return
                 if arg.replace("-", "").isdigit():
                     date = arg
                 if len(arg.lower()) <= 3:
                     append_team = self.NHL_TEAMS.get(arg.upper()) or ""
                     team = arg.upper()
                 if arg.lower() == "tomorrow":
-                    date = pendulum.tomorrow().in_tz("US/Eastern").format("YYYY-MM-DD")
+                    date = pendulum.tomorrow().in_tz(self.default_other_tz).format("YYYY-MM-DD")
                 elif arg.lower() == "yesterday":
-                    date = pendulum.yesterday().in_tz("US/Eastern").format("YYYY-MM-DD")
+                    date = pendulum.yesterday().in_tz(self.default_other_tz).format("YYYY-MM-DD")
             
             if optional_input.lower() == "tomorrow":
-                date = pendulum.tomorrow().in_tz("US/Eastern").format("YYYY-MM-DD")
+                date = pendulum.tomorrow().in_tz(self.default_other_tz).format("YYYY-MM-DD")
             elif optional_input.lower() == "yesterday":
-                date = pendulum.yesterday().in_tz("US/Eastern").format("YYYY-MM-DD")
+                date = pendulum.yesterday().in_tz(self.default_other_tz).format("YYYY-MM-DD")
         
         url = self.NHL_SCOREBOARD_ENDPOINT.format(date, date) + str(append_team)
         LOGGER.debug("NHL API called for: {}".format(url))
@@ -127,7 +155,7 @@ class SportsCog(commands.Cog, name="Sports"):
                 ))
                 return
 
-        games_date = pendulum.parse(games[0]['gameDate']).in_tz("US/Eastern").format('MMM Do \'YY')
+        games_date = pendulum.parse(games[0]['gameDate']).in_tz(self.default_other_tz).format('MMM Do \'YY')
         number_of_games = len(games)
         types_of_games = {
             'P': ' **PLAYOFF** ',
@@ -200,10 +228,10 @@ class SportsCog(commands.Cog, name="Sports"):
 
             else:
                 try:
-                    status = pendulum.parse(game['gameDate']).in_tz('US/Eastern').format(
+                    status = pendulum.parse(game['gameDate']).in_tz(timezone or user_timezone or self.default_tz).format(
                         "h:mm A zz"
                     )
-                    if "AM" in status:
+                    if "AM" == pendulum.parse(game['gameDate']).in_tz(self.default_tz).format("A"):
                         status = "Time TBD"
                 except:
                     status = ""
@@ -241,6 +269,12 @@ class SportsCog(commands.Cog, name="Sports"):
 
         embed = self._build_embed(embed_data, mobile_output, 0x95A3AE)
 
+        if timezone:
+            if not self.user_db.get(member_id):
+                self.user_db[member_id] = {}
+            self.user_db[member_id]['timezone'] = timezone
+            self._save()
+
         await ctx.send(embed=embed)
 
     
@@ -258,29 +292,45 @@ class SportsCog(commands.Cog, name="Sports"):
 
         mobile_output = False
         member = ctx.author
+        member_id = str(member.id)
         if member.is_on_mobile():
             mobile_output = True
 
-        date = pendulum.now().in_tz("US/Pacific").format("YYYY-MM-DD")
+        user_timezone = self.user_db.get(member_id, {}).get('timezone')
+        LOGGER.debug((user_timezone)) #, self.user_db))
+
+        date = pendulum.now().in_tz(self.default_now_tz).format("YYYY-MM-DD")
         append_team = ""
         team = ""
+        timezone = None
         if optional_input:
             args = optional_input.split()
-            for arg in args:
+            for idx, arg in enumerate(args):
+                if arg == "--tz":
+                    # grab the user-defined timezone
+                    timezone = args[idx + 1]
+                    # see if it's a short-hand timezone first
+                    timezone = self.short_tzs.get(timezone.lower()) or timezone
+                    # now check if it's valid
+                    try:
+                        _ = pendulum.timezone(timezone)
+                    except:
+                        await ctx.send("Sorry that is an invalid timezone (try one from https://nodatime.org/TimeZones)")
+                        return
                 if arg.replace("-", "").isdigit():
                     date = arg
                 if len(arg.lower()) <= 3:
                     append_team = self.MLB_TEAMS.get(arg.upper()) or ""
                     team = arg.upper()
                 if arg.lower() == "tomorrow":
-                    date = pendulum.tomorrow().in_tz("US/Eastern").format("YYYY-MM-DD")
+                    date = pendulum.tomorrow().in_tz(self.default_other_tz).format("YYYY-MM-DD")
                 elif arg.lower() == "yesterday":
-                    date = pendulum.yesterday().in_tz("US/Eastern").format("YYYY-MM-DD")
+                    date = pendulum.yesterday().in_tz(self.default_other_tz).format("YYYY-MM-DD")
             
             if optional_input.lower() == "tomorrow":
-                date = pendulum.tomorrow().in_tz("US/Eastern").format("YYYY-MM-DD")
+                date = pendulum.tomorrow().in_tz(self.default_other_tz).format("YYYY-MM-DD")
             elif optional_input.lower() == "yesterday":
-                date = pendulum.yesterday().in_tz("US/Eastern").format("YYYY-MM-DD")
+                date = pendulum.yesterday().in_tz(self.default_other_tz).format("YYYY-MM-DD")
         
         url = self.MLB_SCOREBOARD_ENDPOINT.format(date) + str(append_team)
         LOGGER.debug("MLB API called for: {}".format(url))
@@ -307,7 +357,7 @@ class SportsCog(commands.Cog, name="Sports"):
         sortorder={"Live":0, "Preview":1, "Final":2}
         games.sort(key=lambda x: sortorder[x["status"]["abstractGameState"]])
 
-        games_date = pendulum.parse(games[0]['gameDate']).in_tz("US/Eastern").format('MMM Do \'YY')
+        games_date = pendulum.parse(games[0]['gameDate']).in_tz(self.default_other_tz).format('MMM Do \'YY')
         number_of_games = len(games)
         types_of_games = {
             'P': ' **PLAYOFF** ',
@@ -348,7 +398,7 @@ class SportsCog(commands.Cog, name="Sports"):
             if game['status']['abstractGameState'] == 'Live':
                 if game['status']['detailedState'] == 'Warmup':
                     try:
-                        status = pendulum.parse(game['gameDate']).in_tz('US/Eastern').format(
+                        status = pendulum.parse(game['gameDate']).in_tz(timezone or user_timezone or self.default_tz).format(
                             "h:mm A zz"
                         )
                         if "AM" in status:
@@ -413,7 +463,7 @@ class SportsCog(commands.Cog, name="Sports"):
                         h_score = " {}".format(h_score)
             else:
                 try:
-                    status = pendulum.parse(game['gameDate']).in_tz('US/Eastern').format(
+                    status = pendulum.parse(game['gameDate']).in_tz(timezone or user_timezone or self.default_tz).format(
                         "h:mm A zz"
                     )
                     if "AM" in status:
@@ -454,6 +504,12 @@ class SportsCog(commands.Cog, name="Sports"):
 
         embed = self._build_embed(embed_data, mobile_output, 0xCD0001)
 
+        if timezone:
+            if not self.user_db.get(member_id):
+                self.user_db[member_id] = {}
+            self.user_db[member_id]['timezone'] = timezone
+            self._save()
+
         await ctx.send(content='**COVID-19 gonna cancel this shit**', embed=embed)
 
 
@@ -471,29 +527,45 @@ class SportsCog(commands.Cog, name="Sports"):
 
         mobile_output = False
         member = ctx.author
+        member_id = str(member.id)
         if member.is_on_mobile():
             mobile_output = True
 
-        date = pendulum.now().in_tz("US/Pacific").format("YYYYMMDD")
+        user_timezone = self.user_db.get(member_id, {}).get('timezone')
+        # LOGGER.debug((user_timezone, self.user_db))
+
+        date = pendulum.now().in_tz(self.default_now_tz).format("YYYYMMDD")
         append_team = ""
         team = ""
+        timezone = None
         if optional_input:
             args = optional_input.split()
-            for arg in args:
+            for idx, arg in enumerate(args):
+                if arg == "--tz":
+                    # grab the user-defined timezone
+                    timezone = args[idx + 1]
+                    # see if it's a short-hand timezone first
+                    timezone = self.short_tzs.get(timezone.lower()) or timezone
+                    # now check if it's valid
+                    try:
+                        _ = pendulum.timezone(timezone)
+                    except:
+                        await ctx.send("Sorry that is an invalid timezone (try one from https://nodatime.org/TimeZones)")
+                        return
                 if arg.replace("-", "").isdigit():
                     date = arg.replace("-", "")
                 if len(arg.lower()) <= 3:
                     append_team = self.NBA_TEAMS.get(arg.upper()) or ""
                     team = arg.upper()
                 if arg.lower() == "tomorrow":
-                    date = pendulum.tomorrow().in_tz("US/Eastern").format("YYYYMMDD")
+                    date = pendulum.tomorrow().in_tz(self.default_other_tz).format("YYYYMMDD")
                 elif arg.lower() == "yesterday":
-                    date = pendulum.yesterday().in_tz("US/Eastern").format("YYYYMMDD")
+                    date = pendulum.yesterday().in_tz(self.default_other_tz).format("YYYYMMDD")
             
             if optional_input.lower() == "tomorrow":
-                date = pendulum.tomorrow().in_tz("US/Eastern").format("YYYYMMDD")
+                date = pendulum.tomorrow().in_tz(self.default_other_tz).format("YYYYMMDD")
             elif optional_input.lower() == "yesterday":
-                date = pendulum.yesterday().in_tz("US/Eastern").format("YYYYMMDD")
+                date = pendulum.yesterday().in_tz(self.default_other_tz).format("YYYYMMDD")
         
         url = self.NBA_SCOREBOARD_ENDPOINT.format(date) #+ str(append_team)
         LOGGER.debug("NBA API called for: {}".format(url))
@@ -511,7 +583,7 @@ class SportsCog(commands.Cog, name="Sports"):
         sortorder={2:0, 1:1, 3:2}
         games.sort(key=lambda x: sortorder[x["statusNum"]])
 
-        games_date = pendulum.parse(games[0]['startTimeUTC']).in_tz("US/Eastern").format('MMM Do \'YY')
+        games_date = pendulum.parse(games[0]['startTimeUTC']).in_tz(self.default_other_tz).format('MMM Do \'YY')
         number_of_games = len(games)
         
         away = ""
@@ -579,7 +651,7 @@ class SportsCog(commands.Cog, name="Sports"):
 
             else:
                 try:
-                    status = pendulum.parse(game['startTimeUTC']).in_tz('US/Eastern').format(
+                    status = pendulum.parse(game['startTimeUTC']).in_tz(timezone or user_timezone or self.default_tz).format(
                         "h:mm A zz"
                     )
                 except:
@@ -644,6 +716,12 @@ class SportsCog(commands.Cog, name="Sports"):
 
         embed = self._build_embed(embed_data, mobile_output, 0x17408B)
 
+        if timezone:
+            if not self.user_db.get(member_id):
+                self.user_db[member_id] = {}
+            self.user_db[member_id]['timezone'] = timezone
+            self._save()
+
         await ctx.send(embed=embed)
 
 
@@ -689,6 +767,10 @@ class SportsCog(commands.Cog, name="Sports"):
         embed.set_thumbnail(url=data['thumbnail'])
 
         return embed
+
+    def _save(self):
+        with open('data/sports_db.json', 'w+') as f:
+            json.dump(self.user_db, f)
 
     
     def _fetch_teams(self, mode):
