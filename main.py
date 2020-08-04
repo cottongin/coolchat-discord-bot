@@ -2,6 +2,9 @@ import discord
 from discord.ext import commands
 
 import os, sys, traceback
+from dotenv import load_dotenv
+
+load_dotenv('.env')
 
 
 def get_prefix(bot, message):
@@ -38,5 +41,5 @@ async def on_ready():
     await bot.change_presence(activity=game)
     print(f'Successfully logged in and booted...!')
 
-token = os.environ.get("DISCORD_BOT_SECRET")
+token = os.getenv("DISCORD_BOT_SECRET")
 bot.run(token, bot=True, reconnect=True)
