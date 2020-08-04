@@ -82,12 +82,12 @@ class OwnerCog(commands.Cog, name="Owner Commands"):
         await self.bot.logout()
         sys.exit(0)
 
-    @commands.command(hidden=True)
-    @commands.is_owner()
-    async def restart(self, ctx):
-        """Command to restart the bot."""
-        await ctx.send('**:ok:** (Restart received) BRB!')
-        await self.bot.restart()
+    # @commands.command(hidden=True)
+    # @commands.is_owner()
+    # async def restart(self, ctx):
+    #     """Command to restart the bot."""
+    #     await ctx.send('**:ok:** (Restart received) BRB!')
+    #     await self.bot.restart()
 
     @commands.command(hidden=True)
     @commands.is_owner()
