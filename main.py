@@ -16,7 +16,8 @@ def get_prefix(bot, message):
 
 
 initial_extensions = ['cogs.owner',
-                      'cogs.sports']
+                      'cogs.sports',
+                      'cogs.misc']
 
 bot = commands.Bot(command_prefix=get_prefix, description='A Cool Chat Bot')
 
