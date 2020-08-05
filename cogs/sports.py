@@ -8,6 +8,7 @@ import pendulum
 import logging
 import coloredlogs
 import json
+import random
 
 
 LOGGER = logging.getLogger(__name__)
@@ -562,7 +563,16 @@ class SportsCog(commands.Cog, name="Sports"):
             self.user_db[member_id]['timezone'] = timezone
             self._save()
 
-        await ctx.send(content='**COVID-19 gonna cancel this shit**', embed=embed)
+        memes = [
+            "COVID19 gonna cancel this shit",
+            "Rob Manfred is a joke",
+            "imagine trading Mookie Betts",
+            "The Astros :astros: are a bunch of cheaters",
+            "FUCK THE YANKEES",
+            "imagine 60 games counting as a 'full season'",
+        ]
+
+        await ctx.send(content='**{}**'.format(random.choice(memes)), embed=embed)
 
 
     @commands.command(name='nba', aliases=['nbascores', 'basketball'])
