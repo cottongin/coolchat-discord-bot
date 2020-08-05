@@ -30,10 +30,12 @@ class SportsCog(commands.Cog, name="Sports"):
         self.default_now_tz = "US/Pacific" 
         # ^ When looking for "today's" games we want to look at the last tz
         # to switch days
-        self.default_other_tz = "US/Eastern"
+        self.default_other_tz = "US/Pacific"
         # ^ When looking ahead or behind "today's" games we want to look at the
         # first tz to switch days... I think. Hence why this is set separately
         # from self.default_tz
+        # update: turns out i'm wrong here. think we actually want this to be
+        # the same as default_now_tz
 
         self.short_tzs = {
             "edt": "US/Eastern",
