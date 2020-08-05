@@ -379,8 +379,28 @@ class SportsCog(commands.Cog, name="Sports"):
                 ))
                 return
 
-        sortorder={"Live":0, "Preview":1, "Final":2}
-        games.sort(key=lambda x: sortorder[x["status"]["abstractGameState"]])
+        # MLB.com API datetime population for doubleheaders is a JOKE.
+        # This hack just matches up games and manually sets the time to +5 mins
+        # for easier sorting.
+        for game in games:
+            if game['doubleHeader'] and game['gameNumber'] == 2:
+                # this game is often populated with bogus start time data,
+                # e.g. "11:33pm"
+                for _ in games:
+                    # now iterate over the entire list again and find the matching
+                    # game with the right teams but also game 1 of the doubleheader
+                    if game['teams']['away']['team']['id'] == _['teams']['away']['team']['id'] or \
+                       game['teams']['away']['team']['id'] == _['teams']['home']['team']['id']:
+                        if _['doubleHeader'] and _['gameNumber'] == 1:
+                            # finally, hack the start time and move on
+                            game['gameDate'] = pendulum.parse(_['gameDate']).add(minutes=5).to_iso8601_string()
+                            break
+        
+        # now sort everything by start time first, then put the finished games
+        # at the end (or postponed ones), and the ones in progress up top.
+        status_sortorder={"Live":0, "Preview":1, "Final":2}
+        games.sort(key=lambda x: (x['gameDate']))
+        games.sort(key=lambda x: status_sortorder[x["status"]["abstractGameState"]])
 
         games_date = pendulum.parse(games[0]['gameDate']).in_tz(self.default_other_tz).format('MMM Do \'YY')
         number_of_games = len(games)
@@ -405,7 +425,9 @@ class SportsCog(commands.Cog, name="Sports"):
 
         for game in games:
             away_team = game['teams']['away']['team']['teamName'] if not mobile_output else game['teams']['away']['team']['abbreviation']
+            away_id = game['teams']['away']['team']['id']
             home_team = game['teams']['home']['team']['teamName'] if not mobile_output else game['teams']['home']['team']['abbreviation']
+            home_id = game['teams']['home']['team']['id']
             a_team_emoji = get(ctx.guild.emojis, name="mlb_"+game['teams']['away']['team']['abbreviation'].lower())
             h_team_emoji = get(ctx.guild.emojis, name="mlb_"+game['teams']['home']['team']['abbreviation'].lower())
             if a_team_emoji:
@@ -493,6 +515,11 @@ class SportsCog(commands.Cog, name="Sports"):
                     )
                     if "AM" in status:
                         status = "Time TBD"
+                    if game['doubleHeader'] and game['gameNumber'] == 2:
+                        # whether it's from the start time hack above, or
+                        # direct from MLB.com API, this data is usually bogus
+                        # so let's just set it to something more relevant
+                        status = "Game 2"                        
                 except:
                     status = ""
                 a_score = ""
