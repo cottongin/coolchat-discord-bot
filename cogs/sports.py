@@ -423,8 +423,13 @@ class SportsCog(commands.Cog, name="Sports"):
             "UNK": "",
             "DO": ""
         }
+        ppd_away = ""
+        ppd_home = ""
+        ppd_details = ""
+        ppd_games_mobile = ""
 
         for game in games:
+            postponed = False
             away_team = game['teams']['away']['team']['teamName'] if not mobile_output else game['teams']['away']['team']['abbreviation']
             away_id = game['teams']['away']['team']['id']
             home_team = game['teams']['home']['team']['teamName'] if not mobile_output else game['teams']['home']['team']['abbreviation']
@@ -491,6 +496,8 @@ class SportsCog(commands.Cog, name="Sports"):
                     home_team = self._strikethrough(home_team)
                     a_score = ""
                     h_score = ""
+                    if "PPD" in status:
+                        postponed = True
                 else:
                     a_score = score_bug['teams']['away'].get('runs', "")
                     h_score = score_bug['teams']['home'].get('runs', "")
@@ -529,18 +536,33 @@ class SportsCog(commands.Cog, name="Sports"):
             away_team = "{}{}".format(a_team_emoji, away_team)
             home_team = "{}{}".format(h_team_emoji, home_team)
             if mobile_output:
-                mobile_output_string += "{}{} @ {}{}  |  {}\n".format(
-                    away_team, a_score,
-                    home_team, h_score,
-                    status
-                )
+                if not postponed:
+                    mobile_output_string += "{}{} @ {}{}  |  {}\n".format(
+                        away_team, a_score,
+                        home_team, h_score,
+                        status
+                    )
+                else:
+                    ppd_games_mobile += "{}{} @ {}{}  |  {}\n".format(
+                        away_team, a_score,
+                        home_team, h_score,
+                        status
+                    )
             else:
-                away_team += "\n"
-                home_team += "\n"
-                away += away_team
-                home += home_team
-                status += "\n"
-                details += status
+                if not postponed:
+                    away_team += "\n"
+                    home_team += "\n"
+                    away += away_team
+                    home += home_team
+                    status += "\n"
+                    details += status
+                else:
+                    away_team += "\n"
+                    home_team += "\n"
+                    ppd_away += away_team
+                    ppd_home += home_team
+                    status += "\n"
+                    ppd_details += status
 
         embed_data = {
             "league":          "MLB",
@@ -555,7 +577,83 @@ class SportsCog(commands.Cog, name="Sports"):
             "thumbnail":       "https://img.cottongin.xyz/i/4tk9zpfl.png",
         }
 
-        embed = self._build_embed(embed_data, mobile_output, 0xCD0001)
+
+        # this is really dumb and brute force way to split the games up over
+        # multiple embeds because discord doesn't like fields that are greater
+        # than 1024 characters in length. 
+        # TODO: clean this shit up
+        # TODO: refactor _build_embed to be smarter
+        LOGGER.warn(len(embed_data['mobile']))
+        multi = False # flag for later on, output multiple embeds
+        if mobile_output: 
+            # this is the real snag, since i only use one field for mobile
+            # output, it gets large when many games are scheduled
+            max_length = 1024
+            if len(embed_data['mobile']) > 1024:
+                # we only need to do this if we're over the limit
+                cur_length = 0
+                lines = embed_data['mobile'].split("\n")
+                tmp = ""
+                for idx,line in enumerate(lines):
+                    # go over the list and only add back each line until we're
+                    # at or close to the limit
+                    cur_length += len(line)
+                    if cur_length <= max_length:
+                        # add the line since we're still under 1024
+                        tmp += line + "\n"
+                    else:
+                        # we're over, break the loop to perserve idx
+                        break
+                # idx allows us to add the rest of the games where we left off
+                # for the 2nd embed
+                rest = "\n".join(lines[idx:])
+                # LOGGER.warn(rest)
+                multi = True # set our multiple embed flag to true
+                embed_data = {
+                    "league":          "MLB",
+                    "games_date":      games_date,
+                    "number_of_games": number_of_games,
+                    "mobile":          tmp,
+                    "away":            away,
+                    "home":            home,
+                    "status":          details,
+                    "copyright":       data['copyright'],
+                    "icon":            "https://img.cottongin.xyz/i/4tk9zpfl.png",
+                    "thumbnail":       "https://img.cottongin.xyz/i/4tk9zpfl.png",
+                }
+                # create the first embed, this is where refactoring the build
+                # embed code would come in handy
+                embed1 = self._build_embed(embed_data, mobile_output, 0xCD0001)
+                embed_data = {
+                    "league":          "MLB",
+                    "title":           "",
+                    "description":     "",
+                    "multi":           True,
+                    "games_date":      games_date,
+                    "number_of_games": number_of_games,
+                    "mobile":          rest,
+                    "away":            away,
+                    "home":            home,
+                    "status":          details,
+                    "copyright":       data['copyright'],
+                    "icon":            "https://img.cottongin.xyz/i/4tk9zpfl.png",
+                    "thumbnail":       "https://img.cottongin.xyz/i/4tk9zpfl.png",
+                }
+                # create number two
+                embed2 = self._build_embed(embed_data, mobile_output, 0xCD0001)
+            else:
+                embed = self._build_embed(embed_data, mobile_output, 0xCD0001)
+        else:
+            embed = self._build_embed(embed_data, mobile_output, 0xCD0001)
+
+        if postponed:
+            ppd_embed_data = {
+                "postponed":       postponed,
+                "ppd":             [ppd_away, ppd_home, ppd_details],
+                "ppd_mobile":      ppd_games_mobile,
+                "title":           "Postponed Games",
+            }
+            ppd_embed = self._build_embed(ppd_embed_data, mobile_output, 0xCD0001)
 
         if timezone:
             if not self.user_db.get(member_id):
@@ -572,7 +670,13 @@ class SportsCog(commands.Cog, name="Sports"):
             "imagine 60 games counting as a 'full season'",
         ]
 
-        await ctx.send(content='**{}**'.format(random.choice(memes)), embed=embed)
+        if multi:
+            await ctx.send(content='**{}**'.format(random.choice(memes)), embed=embed1)
+            await ctx.send(embed=embed2)
+        else:
+            await ctx.send(content='**{}**'.format(random.choice(memes)), embed=embed)
+        if postponed:
+            await ctx.send(embed=ppd_embed)
 
 
     @commands.command(name='nba', aliases=['nbascores', 'basketball'])
@@ -816,24 +920,48 @@ class SportsCog(commands.Cog, name="Sports"):
         return "||{}||".format(text)
 
     def _build_embed(self, data, mobile=False, color=0x98FB98):
-        embed = discord.Embed(title='{league} Scores for {date}'.format(
-                                     league=data['league'], 
-                                     date=data['games_date']),
-                              description='{num}{type}game{s} {are_or_is} scheduled'.format(
-                                  num=data['number_of_games'],
-                                  type=" ",
-                                  s="s" if data['number_of_games'] > 1 else "",
-                                  are_or_is="are" if data['number_of_games'] > 1 else "is"),
-                              colour=color)
-        if mobile:
-            embed.add_field(name='Games', value=data['mobile'], inline=True)
+        if data.get("postponed"):
+            embed = discord.Embed(
+                title=data['title'],
+                colour=color
+            )
+            if mobile:
+                embed.add_field(name='Games', value=data['ppd_mobile'], inline=True)
+            else:
+                embed.add_field(name='Away', value=data['ppd'][0], inline=True)
+                embed.add_field(name='Home', value=data['ppd'][1], inline=True)
+                embed.add_field(name='Status', value=data['ppd'][2], inline=True)
+        elif data.get("multi"):
+            embed = discord.Embed(
+                # title=data['title'],
+                colour=color
+            )
+            if mobile:
+                embed.add_field(name='Games (continued)', value=data['mobile'], inline=True)
+            else:
+                embed.add_field(name='Away', value=data['away'], inline=True)
+                embed.add_field(name='Home', value=data['home'], inline=True)
+                embed.add_field(name='Status', value=data['status'], inline=True)
         else:
-            embed.add_field(name='Away', value=data['away'], inline=True)
-            embed.add_field(name='Home', value=data['home'], inline=True)
-            embed.add_field(name='Status', value=data['status'], inline=True)
+            embed = discord.Embed(title='{league} Scores for {date}'.format(
+                                        league=data['league'], 
+                                        date=data['games_date']),
+                                description='{num}{type}game{s} {are_or_is} scheduled'.format(
+                                    num=data['number_of_games'],
+                                    type=" ",
+                                    s="s" if data['number_of_games'] > 1 else "",
+                                    are_or_is="are" if data['number_of_games'] > 1 else "is"),
+                                colour=color)
+            if mobile:
+                embed.add_field(name='Games', value=data['mobile'], inline=True)
+            else:
+                embed.add_field(name='Away', value=data['away'], inline=True)
+                embed.add_field(name='Home', value=data['home'], inline=True)
+                embed.add_field(name='Status', value=data['status'], inline=True)
 
-        # embed.set_footer(text=data['copyright'], icon_url=data['icon'])
-        embed.set_thumbnail(url=data['thumbnail'])
+
+            # embed.set_footer(text=data['copyright'], icon_url=data['icon'])
+            embed.set_thumbnail(url=data['thumbnail'])
 
         return embed
 
