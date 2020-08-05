@@ -323,7 +323,7 @@ class SportsCog(commands.Cog, name="Sports"):
             mobile_output = True
 
         user_timezone = self.user_db.get(member_id, {}).get('timezone')
-        LOGGER.debug((user_timezone)) #, self.user_db))
+        LOGGER.debug((user_timezone))
 
         date = pendulum.now().in_tz(self.default_now_tz).format("YYYY-MM-DD")
         append_team = ""
