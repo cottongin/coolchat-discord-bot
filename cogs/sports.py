@@ -134,16 +134,20 @@ class SportsCog(commands.Cog, name="Sports"):
                     team = arg.upper()
                 if arg.lower() == "tomorrow":
                     date = pendulum.tomorrow().in_tz(
+                        user_timezone or \
                         self.default_other_tz).format("YYYY-MM-DD")
                 elif arg.lower() == "yesterday":
                     date = pendulum.yesterday().in_tz(
+                        user_timezone or \
                         self.default_other_tz).format("YYYY-MM-DD")
             
             if optional_input.lower() == "tomorrow":
                 date = pendulum.tomorrow().in_tz(
+                    user_timezone or \
                     self.default_other_tz).format("YYYY-MM-DD")
             elif optional_input.lower() == "yesterday":
                 date = pendulum.yesterday().in_tz(
+                    user_timezone or \
                     self.default_other_tz).format("YYYY-MM-DD")
         
         url = self.NHL_SCOREBOARD_ENDPOINT.format(date, date) + str(append_team)
@@ -349,14 +353,14 @@ class SportsCog(commands.Cog, name="Sports"):
                     append_team = self.MLB_TEAMS.get(arg.upper()) or ""
                     team = arg.upper()
                 if arg.lower() == "tomorrow":
-                    date = pendulum.tomorrow().in_tz(self.default_other_tz).format("YYYY-MM-DD")
+                    date = pendulum.tomorrow().in_tz(user_timezone or self.default_other_tz).format("YYYY-MM-DD")
                 elif arg.lower() == "yesterday":
-                    date = pendulum.yesterday().in_tz(self.default_other_tz).format("YYYY-MM-DD")
+                    date = pendulum.yesterday().in_tz(user_timezone or self.default_other_tz).format("YYYY-MM-DD")
             
             if optional_input.lower() == "tomorrow":
-                date = pendulum.tomorrow().in_tz(self.default_other_tz).format("YYYY-MM-DD")
+                date = pendulum.tomorrow().in_tz(user_timezone or self.default_other_tz).format("YYYY-MM-DD")
             elif optional_input.lower() == "yesterday":
-                date = pendulum.yesterday().in_tz(self.default_other_tz).format("YYYY-MM-DD")
+                date = pendulum.yesterday().in_tz(user_timezone or self.default_other_tz).format("YYYY-MM-DD")
         
         url = self.MLB_SCOREBOARD_ENDPOINT.format(date) + str(append_team)
         LOGGER.debug("MLB API called for: {}".format(url))
@@ -727,14 +731,14 @@ class SportsCog(commands.Cog, name="Sports"):
                     append_team = self.NBA_TEAMS.get(arg.upper()) or ""
                     team = arg.upper()
                 if arg.lower() == "tomorrow":
-                    date = pendulum.tomorrow().in_tz(self.default_other_tz).format("YYYYMMDD")
+                    date = pendulum.tomorrow().in_tz(user_timezone or self.default_other_tz).format("YYYYMMDD")
                 elif arg.lower() == "yesterday":
-                    date = pendulum.yesterday().in_tz(self.default_other_tz).format("YYYYMMDD")
+                    date = pendulum.yesterday().in_tz(user_timezone or self.default_other_tz).format("YYYYMMDD")
             
             if optional_input.lower() == "tomorrow":
-                date = pendulum.tomorrow().in_tz(self.default_other_tz).format("YYYYMMDD")
+                date = pendulum.tomorrow().in_tz(user_timezone or self.default_other_tz).format("YYYYMMDD")
             elif optional_input.lower() == "yesterday":
-                date = pendulum.yesterday().in_tz(self.default_other_tz).format("YYYYMMDD")
+                date = pendulum.yesterday().in_tz(user_timezone or self.default_other_tz).format("YYYYMMDD")
         
         url = self.NBA_SCOREBOARD_ENDPOINT.format(date) #+ str(append_team)
         LOGGER.debug("NBA API called for: {}".format(url))
