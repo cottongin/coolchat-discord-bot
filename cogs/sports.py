@@ -9,6 +9,8 @@ import logging
 import coloredlogs
 import json
 import random
+import os
+import errno
 
 
 LOGGER = logging.getLogger(__name__)
@@ -48,6 +50,13 @@ class SportsCog(commands.Cog, name="Sports"):
             "pst": "US/Pacific",
             "pdt": "US/Pacific"
         }
+
+        if not os.path.exists(os.path.dirname("data/sports_db.json")):
+            try:
+                os.makedirs(os.path.dirname("data/sports_db.json"))
+            except OSError as exc: # Guard against race condition
+                if exc.errno != errno.EEXIST:
+                    raise
 
         try:
             with open('data/sports_db.json') as f:             
