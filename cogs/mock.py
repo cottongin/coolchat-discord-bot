@@ -16,7 +16,6 @@ import time
 import base64
 from io import BytesIO
 
-import pendulum
 from PIL import Image, ImageDraw, ImageFont
 
 
