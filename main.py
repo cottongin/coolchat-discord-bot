@@ -7,10 +7,10 @@ from dotenv import load_dotenv
 try:
     # dev build only requires this
     load_dotenv('.env')
-    dev_bot = True
+    dev_bot = os.getenv("DEVBOT")
 except:
     # heroku stores this
-    dev_bot = False
+    pass
 
 
 def get_prefix(bot, message):
