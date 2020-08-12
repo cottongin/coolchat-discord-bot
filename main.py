@@ -3,14 +3,23 @@ from discord.ext import commands
 
 import os, sys, traceback
 
-# from dotenv import load_dotenv
-# load_dotenv('.env')
+from dotenv import load_dotenv
+try:
+    # dev build only requires this
+    load_dotenv('.env')
+    dev_bot = True
+except:
+    # heroku stores this
+    dev_bot = False
 
 
 def get_prefix(bot, message):
     """A callable Prefix for our bot. This could be edited to allow per server prefixes."""
 
-    prefixes = ['`', '!', '?']
+    if not dev_bot:
+        prefixes = ['`', '!', '?']
+    else:
+        prefixes = ['.']
 
     return commands.when_mentioned_or(*prefixes)(bot, message)
 
