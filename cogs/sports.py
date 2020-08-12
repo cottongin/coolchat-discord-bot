@@ -11,6 +11,7 @@ import json
 import random
 import os
 import errno
+import time
 
 
 LOGGER = logging.getLogger(__name__)
@@ -224,12 +225,12 @@ class SportsCog(commands.Cog, name="Sports"):
                 a_score = score_bug['teams']['away']['goals']
                 h_score = score_bug['teams']['home']['goals']
                 if score_bug['teams']['away'].get('powerPlay'):
-                    away_team += " (PP {})".format(
-                        score_bug['powerPlayInfo']['situationTimeRemaining']
+                    away_team += " (**PP {}**)".format(
+                        self._convert_seconds(score_bug['powerPlayInfo']['situationTimeRemaining'])
                     )
                 if score_bug['teams']['home'].get('powerPlay'):
-                    home_team += " (PP {})".format(
-                        score_bug['powerPlayInfo']['situationTimeRemaining']
+                    home_team += " (**PP {}**)".format(
+                        self._convert_seconds(score_bug['powerPlayInfo']['situationTimeRemaining'])
                     )
                 if a_score > h_score:
                     a_score = "**{}**".format(a_score)
@@ -940,6 +941,13 @@ class SportsCog(commands.Cog, name="Sports"):
 
     def _spoiler(self, text):
         return "||{}||".format(text)
+
+    def _convert_seconds(self, secs):
+        time_left = time.strftime("%M:%S", time.gmtime(secs))
+        if time_left[0] == "0":
+            return time_left[1:]
+        else:
+            return time_left 
 
     def _build_embed(self, data, mobile=False, color=0x98FB98):
         if data.get("postponed"):
