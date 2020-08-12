@@ -668,7 +668,7 @@ class SportsCog(commands.Cog, name="Sports"):
         else:
             embed = self._build_embed(embed_data, mobile_output, 0xCD0001)
 
-        if ppd_details:
+        if ppd_details or ppd_games_mobile:
             ppd_embed_data = {
                 "postponed":       True,
                 "ppd":             [ppd_away, ppd_home, ppd_details],
