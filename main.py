@@ -2,9 +2,9 @@ import discord
 from discord.ext import commands
 
 import os, sys, traceback
-from dotenv import load_dotenv
 
-load_dotenv('.env')
+# from dotenv import load_dotenv
+# load_dotenv('.env')
 
 
 def get_prefix(bot, message):
