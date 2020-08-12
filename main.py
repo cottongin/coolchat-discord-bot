@@ -10,7 +10,7 @@ try:
     dev_bot = os.getenv("DEVBOT")
 except:
     # heroku stores this
-    pass
+    dev_bot = False
 
 
 def get_prefix(bot, message):
