@@ -258,7 +258,8 @@ class SportsCog(commands.Cog, name="Sports"):
                     if int(game['status']['codedGameState']) == 2:
                         # Pre-game
                         status += " [Warmup]"
-                    if "AM" == pendulum.parse(game['gameDate']).in_tz(self.default_tz).format("A"):
+                    if "AM" == pendulum.parse(game['gameDate']).in_tz(self.default_tz).format("A") and \
+                       int(status.split(":")[0]) < 10: #or game['stats'].get('startTimeTBD'):
                         status = "Time TBD"
                 except:
                     status = ""
@@ -650,9 +651,9 @@ class SportsCog(commands.Cog, name="Sports"):
         else:
             embed = self._build_embed(embed_data, mobile_output, 0xCD0001)
 
-        if postponed:
+        if ppd_details:
             ppd_embed_data = {
-                "postponed":       postponed,
+                "postponed":       True,
                 "ppd":             [ppd_away, ppd_home, ppd_details],
                 "ppd_mobile":      ppd_games_mobile,
                 "title":           "Postponed Games",
@@ -679,7 +680,7 @@ class SportsCog(commands.Cog, name="Sports"):
             await ctx.send(embed=embed2)
         else:
             await ctx.send(content='**{}**'.format(random.choice(memes)), embed=embed)
-        if postponed:
+        if ppd_details:
             await ctx.send(embed=ppd_embed)
 
 
