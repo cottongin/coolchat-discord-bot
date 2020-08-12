@@ -223,6 +223,14 @@ class SportsCog(commands.Cog, name="Sports"):
                 score_bug = game['linescore']
                 a_score = score_bug['teams']['away']['goals']
                 h_score = score_bug['teams']['home']['goals']
+                if score_bug['teams']['away'].get('powerPlay'):
+                    away_team += " (PP {})".format(
+                        score_bug['powerPlayInfo']['situationTimeRemaining']
+                    )
+                if score_bug['teams']['home'].get('powerPlay'):
+                    home_team += " (PP {})".format(
+                        score_bug['powerPlayInfo']['situationTimeRemaining']
+                    )
                 if a_score > h_score:
                     a_score = "**{}**".format(a_score)
                     away_team = "**{}**".format(away_team)
