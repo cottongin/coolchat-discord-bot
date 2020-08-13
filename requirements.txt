@@ -4,3 +4,4 @@ requests
 pendulum
 coloredlogs
 pillow
+redis
