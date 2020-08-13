@@ -242,6 +242,10 @@ class SportsCog(commands.Cog, name="Sports"):
                     score_bug['currentPeriodTimeRemaining'],
                     score_bug['currentPeriodOrdinal']
                 )
+                if score_bug['intermissionInfo'].get('inIntermission'):
+                    time += " **INT {}**".format(
+                        self._convert_seconds(score_bug['intermissionInfo']['intermissionTimeRemaining'])
+                    )
                 if not mobile_output:
                     status = "{} - {} [{}]".format(a_score, h_score, time)
                 else:
