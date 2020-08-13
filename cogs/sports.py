@@ -12,6 +12,8 @@ import random
 import os
 import errno
 import time
+import redis
+import pickle
 
 
 LOGGER = logging.getLogger(__name__)
@@ -28,6 +30,7 @@ class SportsCog(commands.Cog, name="Sports"):
     def __init__(self, bot):
         self.bot = bot
         self.__name__ = __name__
+        self.db = redis.from_url(os.environ.get("REDIS_URL"))
 
         self.default_tz = "US/Eastern"
         # ^ If a user doesn't provide a tz what should we use?
@@ -52,16 +55,22 @@ class SportsCog(commands.Cog, name="Sports"):
             "pdt": "US/Pacific"
         }
 
-        if not os.path.exists(os.path.dirname("data/sports_db.json")):
-            try:
-                os.makedirs(os.path.dirname("data/sports_db.json"))
-            except OSError as exc: # Guard against race condition
-                if exc.errno != errno.EEXIST:
-                    raise
+        # if not os.path.exists(os.path.dirname("data/sports_db.json")):
+        #     try:
+        #         os.makedirs(os.path.dirname("data/sports_db.json"))
+        #     except OSError as exc: # Guard against race condition
+        #         if exc.errno != errno.EEXIST:
+        #             raise
+
+        # try:
+        #     with open('data/sports_db.json') as f:             
+        #         self.user_db = json.load(f)
+        # except:
+        #     self.user_db = {}
 
         try:
-            with open('data/sports_db.json') as f:             
-                self.user_db = json.load(f)
+            _ = self.db.get('sports_db')
+            self.user_db = pickle.loads(_)
         except:
             self.user_db = {}
 
@@ -1011,8 +1020,10 @@ class SportsCog(commands.Cog, name="Sports"):
         return embed
 
     def _save(self):
-        with open('data/sports_db.json', 'w+') as f:
-            json.dump(self.user_db, f)
+        # with open('data/sports_db.json', 'w+') as f:
+        #     json.dump(self.user_db, f)
+        _ = pickle.dumps(self.user_db)
+        self.db.set('sports_db', _)
 
     
     def _fetch_teams(self, mode):
