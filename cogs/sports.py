@@ -91,6 +91,16 @@ class SportsCog(commands.Cog, name="Sports"):
         self.MLB_TEAMS = self._fetch_teams("MLB")
         self.NBA_TEAMS = self._fetch_teams("NBA")
 
+    @commands.command(name='sports', pass_context=True)
+    @commands.cooldown(1, 5, commands.BucketType.user)
+    async def do_all_scores(self, ctx, *, optional_input: str=None):
+        """Fetches scores from all available leagues (currently NHL, MLB, and NBA)
+        """
+        await ctx.invoke(self.bot.get_command('nhl'), optional_input=optional_input)
+        await ctx.invoke(self.bot.get_command('mlb'), optional_input=optional_input)
+        await ctx.invoke(self.bot.get_command('nba'), optional_input=optional_input)
+
+
     @commands.command(name='nhl', aliases=['nhlscores', 'hockey'])
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def do_nhl_scores(self, ctx, *, optional_input: str=None):
