@@ -38,7 +38,7 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
             await ctx.send("I need someone to look for!")
             return
 
-        msg = await ctx.channel.history().get(author=member)
+        msg = await ctx.channel.history(limit=None).get(author=member)
         if not msg:
             await ctx.send("I couldn't find a recent message from {}".format(
                 self._mono(member.display_name)
