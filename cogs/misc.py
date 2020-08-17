@@ -42,7 +42,7 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
         message = await ctx.send("Hang on, I'm searching this channel's chat history (this takes a second)")
         msg = await ctx.channel.history(limit=None).get(author=member)
         if not msg:
-            await ctx.send("I couldn't find a recent message from {}".format(
+            await message.edit(content="I couldn't find a recent message from {}".format(
                 self._mono(member.display_name)
             ))
             return
