@@ -25,6 +25,50 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
 
         await ctx.send(embed=embed)
 
+    @commands.command(name='seen', aliases=['last'])
+    @commands.cooldown(1, 5, commands.BucketType.user)
+    async def seen_member(self, ctx,
+                              member: typing.Optional[discord.Member] = None):
+        """Tries to find the last/most recent message from a user
+        e.g. seen @ra
+        """
+
+        if not member:
+            await ctx.send("I need someone to look for!")
+            return
+
+        msg = await ctx.channel.history().get(author=member)
+        if not msg:
+            await ctx.send("I couldn't find a recent message from {}".format(
+                self._mono(member.display_name)
+            ))
+            return
+        await ctx.send("I last saw {} in here saying: \n{}".format(
+            self._mono(member.display_name), 
+            self._quote(msg.content)))
+
+
+    def _strikethrough(self, text):
+        return "~~{}~~".format(text)
+
+    def _bold(self, text):
+        return "**{}**".format(text)
+
+    def _italics(self, text):
+        return "*{}*".format(text)
+
+    def _quote(self, text):
+        return "> {}".format(text)
+
+    def _mono(self, text):
+        return "`{}`".format(text)
+
+    def _code(self, text, lang=""):
+        return "```{}\n{}\n```".format(lang, text)
+
+    def _spoiler(self, text):
+        return "||{}||".format(text)
+
 
 def setup(bot):
     bot.add_cog(MiscCog(bot))
