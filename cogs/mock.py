@@ -37,7 +37,7 @@ class MockCog(commands.Cog, name="Mock"):
 
     @commands.command(name='browncloud', aliases=['bc', 'sal'])
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def katzman(self, ctx,
+    async def browncloud(self, ctx,
                               member: typing.Optional[discord.Member] = None, *, 
                               text: str=None):
         """Makes a sPoNgEbOb TeXt (or the last message from a provided member) meme
