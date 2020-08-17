@@ -3,6 +3,7 @@ from discord.ext import commands
 import sys
 import logging
 import typing
+import pendulum
 
 
 class MiscCog(commands.Cog, name="Miscellaneous"):
@@ -38,15 +39,17 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
             await ctx.send("I need someone to look for!")
             return
 
+        message = await ctx.send("Hang on, I'm searching this channel's chat history (this takes a second)")
         msg = await ctx.channel.history(limit=None).get(author=member)
         if not msg:
             await ctx.send("I couldn't find a recent message from {}".format(
                 self._mono(member.display_name)
             ))
             return
-        await ctx.send("I last saw {} in here saying: \n{}".format(
+        await message.edit(content="I last saw {} in here {} saying: \n{}".format(
             self._mono(member.display_name), 
-            self._quote(msg.content)))
+            pendulum.parse(str(msg.created_at), strict=False).diff_for_humans(),
+            self._quote(msg.clean_content)))
 
 
     def _strikethrough(self, text):
