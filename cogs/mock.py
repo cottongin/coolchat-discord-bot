@@ -35,6 +35,52 @@ class MockCog(commands.Cog, name="Mock"):
         self.__name__ = __name__
 
 
+    @commands.command(name='browncloud', aliases=['bc', 'sal'])
+    @commands.cooldown(1, 5, commands.BucketType.user)
+    async def katzman(self, ctx,
+                              member: typing.Optional[discord.Member] = None, *, 
+                              text: str=None):
+        """Makes a sPoNgEbOb TeXt (or the last message from a provided member) meme
+        e.g. browncloud haha this is going to be funny
+             sal @lameuser
+        """
+
+        img_path = "assets/bc.png"
+        font_path = "assets/ComicNeue-Bold.ttf"
+
+        if not member and not text:
+            with open(img_path, "rb") as fh:
+                f = discord.File(fh, filename=img_path.split('/')[-1])
+            await ctx.send(file=f)
+            return
+
+        if member and text:
+            mode = "text"
+        elif member and not text:
+            mode = "member"
+        elif text and not member:
+            mode = "text"
+
+        if mode == "member":
+            msg = await ctx.channel.history().get(author=member)
+            if not msg:
+                await ctx.send("I couldn't find a recent message from {}".format(
+                    self._mono(member.display_name)
+                ))
+                return
+            text = "{}: {}".format(member.display_name, msg.content)
+
+        text = self._crazyCase(text)
+
+        image = await self._make_image(img_path, font_path, text)
+        if not image:
+            LOGGER.error("Something went wrong making the image")
+            await ctx.send("Sorry I couldn't make an image from that.")
+            return
+
+        await ctx.send(file=image)
+    
+    
     @commands.command(name='katzman', aliases=['km', 'mock2'])
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def katzman(self, ctx,
