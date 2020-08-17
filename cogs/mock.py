@@ -68,7 +68,7 @@ class MockCog(commands.Cog, name="Mock"):
                     self._mono(member.display_name)
                 ))
                 return
-            text = "{}: {}".format(member.display_name, msg.content)
+            text = "{}: {}".format(member.display_name, msg.clean_content)
 
         text = self._crazyCase(text)
 
@@ -114,7 +114,7 @@ class MockCog(commands.Cog, name="Mock"):
                     self._mono(member.display_name)
                 ))
                 return
-            text = "{}: {}".format(member.display_name, msg.content)
+            text = "{}: {}".format(member.display_name, msg.clean_content)
 
         text = self._crazyCase(text)
 
@@ -160,7 +160,7 @@ class MockCog(commands.Cog, name="Mock"):
                     self._mono(member.display_name)
                 ))
                 return
-            text = "{}: {}".format(member.display_name, msg.content)
+            text = "{}: {}".format(member.display_name, msg.clean_content)
 
         text = self._crazyCase(text)
 
@@ -206,7 +206,7 @@ class MockCog(commands.Cog, name="Mock"):
                     self._mono(member.display_name)
                 ))
                 return
-            text = "{}: {}".format(member.display_name, msg.content)
+            text = "{}: {}".format(member.display_name, msg.clean_content)
 
         text = self._crazyCase(text)
 
