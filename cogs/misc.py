@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 import sys
 import logging
+import typing
 
 
 class MiscCog(commands.Cog, name="Miscellaneous"):
