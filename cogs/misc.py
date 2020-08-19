@@ -4,6 +4,7 @@ import sys
 import logging
 import typing
 import pendulum
+import random
 
 
 class MiscCog(commands.Cog, name="Miscellaneous"):
@@ -12,6 +13,26 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
         self.bot = bot
         self.__name__ = __name__
     
+
+    @commands.command(name='pick', aliases=['choose', 'random', 'choice'])
+    async def pick_something_randomly(self, ctx, *, optional_input: str=None):
+        """Command to pick something from user input at random"""
+
+        if not optional_input:
+            return await ctx.send("I need something to choose from")
+        if "," not in optional_input:
+            if " or " in optional_input.lower():
+                optional_input = optional_input.split(" or ")
+            else:
+                optional_input = optional_input.split()
+        else:
+            optional_input = optional_input.split(",")
+        if len(optional_input) == 1:
+            return await ctx.send("What do you expect from me?")
+        elif len(optional_input) >= 10:
+            return await ctx.send("Way too many things to choose from, try thinking for yourself!")
+        choice = random.choice(optional_input)
+        return await ctx.send("{}".format(self._bold(choice.strip())))
 
     @commands.command(name='source', aliases=['mysource', 'botsource'])
     async def show_source(self, ctx):
