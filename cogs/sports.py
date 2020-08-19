@@ -534,6 +534,15 @@ class SportsCog(commands.Cog, name="Sports"):
                         status = "[{}]".format(time)
                         a_score = " {}".format(a_score)
                         h_score = " {}".format(h_score)
+                    if game.get("resumedFrom"):
+                        if not mobile_output:
+                            status += " (Resumed from {})".format(
+                                pendulum.parse(game['resumedFrom']).format("MMM Do")
+                            )
+                        else:
+                            status += " (orig: {})".format(
+                                pendulum.parse(game['resumedFrom']).format("M/D")
+                            )
             elif game['status']['abstractGameState'] == 'Final':
                 score_bug = game.get('linescore', {})
                 if not score_bug:
