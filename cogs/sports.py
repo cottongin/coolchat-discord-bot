@@ -161,6 +161,11 @@ class SportsCog(commands.Cog, name="Sports"):
                 if len(arg.lower()) <= 3:
                     append_team = self.NHL_TEAMS.get(arg.upper()) or ""
                     team = arg.upper()
+                if not append_team:
+                    for full_name, id_ in self.NHL_TEAMS.items():
+                        if arg.lower() in full_name.lower():
+                            append_team = id_
+                            break
                 if arg.lower() == "tomorrow":
                     date = pendulum.tomorrow().in_tz(
                         user_timezone or \
@@ -395,6 +400,11 @@ class SportsCog(commands.Cog, name="Sports"):
                 if len(arg.lower()) <= 3:
                     append_team = self.MLB_TEAMS.get(arg.upper()) or ""
                     team = arg.upper()
+                if not append_team:
+                    for full_name, id_ in self.MLB_TEAMS.items():
+                        if arg.lower() in full_name.lower():
+                            append_team = id_
+                            break
                 if arg.lower() == "tomorrow":
                     date = pendulum.tomorrow().in_tz(user_timezone or self.default_other_tz).format("YYYY-MM-DD")
                 elif arg.lower() == "yesterday":
@@ -782,6 +792,12 @@ class SportsCog(commands.Cog, name="Sports"):
                 if len(arg.lower()) <= 3:
                     append_team = self.NBA_TEAMS.get(arg.upper()) or ""
                     team = arg.upper()
+                if not append_team:
+                    for full_name, id_ in self.NBA_TEAMS.items():
+                        if arg.lower() in full_name.lower():
+                            append_team = id_
+                            team = id_.upper()
+                            break
                 if arg.lower() == "tomorrow":
                     date = pendulum.tomorrow().in_tz(user_timezone or self.default_other_tz).format("YYYYMMDD")
                 elif arg.lower() == "yesterday":
@@ -1042,6 +1058,7 @@ class SportsCog(commands.Cog, name="Sports"):
             teams = {}
             for team in data:
                 teams[team['abbreviation']] = team['id']
+                teams[team['name']] = team['id']
             return teams
         if mode == "MLB":
             data = requests.get("https://statsapi.mlb.com/api/v1/teams?sportId=1").json()
@@ -1049,6 +1066,7 @@ class SportsCog(commands.Cog, name="Sports"):
             teams = {}
             for team in data:
                 teams[team['abbreviation']] = team['id']
+                teams[team['name']] = team['id']
             return teams
         if mode == "NBA":
             year = pendulum.now().year
@@ -1059,6 +1077,7 @@ class SportsCog(commands.Cog, name="Sports"):
             for team in data:
                 if team['isNBAFranchise']:
                     teams[team['tricode']] = team['nickname']
+                    teams[team['fullName']] = team['tricode']
             return teams
 
 
