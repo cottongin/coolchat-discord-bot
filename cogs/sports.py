@@ -904,6 +904,9 @@ class SportsCog(commands.Cog, name="Sports"):
                 a_score = ""
                 h_score = ""
 
+            if game.get('nugget', {}).get('text', {}):
+                status += f" {game['nugget']['text']}"
+
             away_team = "{}{}".format(a_team_emoji, away_team)
             home_team = "{}{}".format(h_team_emoji, home_team)
             if team:
