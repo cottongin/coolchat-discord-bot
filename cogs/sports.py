@@ -905,7 +905,12 @@ class SportsCog(commands.Cog, name="Sports"):
                 h_score = ""
 
             if game.get('nugget', {}).get('text', {}):
-                status += f" - {game['nugget']['text']}"
+                nugget = game['nugget']['text']
+                if "Postponed" in nugget and not team:
+                    nugget = " - PPD"
+                    status += nugget
+                elif team:
+                    status += f" - {nugget}"
 
             away_team = "{}{}".format(a_team_emoji, away_team)
             home_team = "{}{}".format(h_team_emoji, home_team)
