@@ -296,7 +296,10 @@ class SportsCog(commands.Cog, name="Sports"):
                     status = "{}".format(time)
                     a_score = " {}".format(a_score)
                     h_score = " {}".format(h_score)
-
+            elif game['status']['detailedState'] == 'Postponed':
+                status = "PPD"
+                a_score = ""
+                h_score = ""
             else:
                 try:
                     status = pendulum.parse(game['gameDate']).in_tz(timezone or user_timezone or self.default_tz).format(
