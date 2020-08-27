@@ -6,6 +6,7 @@ import typing
 import pendulum
 import random
 import feedparser
+import aiohttp
 from bs4 import BeautifulSoup
 
 
@@ -21,6 +22,15 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
         """Retrieves latest Albert post from LiveJournal"""
         url = "https://albert71292.livejournal.com/data/rss"
         raw_feed = feedparser.parse(url)
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url.replace("/data/rss", "")) as r:
+                if r.status == 200:
+                    html = await r.text()
+        raw_html = BeautifulSoup(html, "lxml")
+        try:
+            post_image = raw_html.find('div', class_='entry-userpic').find('img').get('src')
+        except:
+            post_image = raw_feed.feed.image.href
         latest = raw_feed.entries[0]
         post = latest.description.replace("<br />", "\n").replace("<p />", "\n")
         post = BeautifulSoup(post, "lxml").text
@@ -33,7 +43,7 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
             url = latest.link
         )
 
-        embed.set_thumbnail(url=raw_feed.feed.image.href)
+        embed.set_thumbnail(url=post_image)
 
         await ctx.send(content=f"**{raw_feed.feed.title}**", embed=embed)
 
