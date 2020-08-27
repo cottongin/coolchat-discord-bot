@@ -907,8 +907,7 @@ class SportsCog(commands.Cog, name="Sports"):
             if game.get('nugget', {}).get('text', {}):
                 nugget = game['nugget']['text']
                 if "Postponed" in nugget and not team:
-                    nugget = " - PPD"
-                    status += nugget
+                    status = "PPD"
                 elif team:
                     status += f" - {nugget}"
 
