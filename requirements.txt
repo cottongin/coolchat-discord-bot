@@ -5,3 +5,6 @@ pendulum
 coloredlogs
 pillow
 redis
+feedparser
+bs4
+lxml

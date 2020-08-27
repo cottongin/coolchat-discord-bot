@@ -5,6 +5,8 @@ import logging
 import typing
 import pendulum
 import random
+import feedparser
+from bs4 import BeautifulSoup
 
 
 class MiscCog(commands.Cog, name="Miscellaneous"):
@@ -13,6 +15,28 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
         self.bot = bot
         self.__name__ = __name__
     
+
+    @commands.command(name='albert')
+    async def fetch_latest_albert(self, ctx):
+        """Retrieves latest Albert post from LiveJournal"""
+        url = "https://albert71292.livejournal.com/data/rss"
+        raw_feed = feedparser.parse(url)
+        latest = raw_feed.entries[0]
+        post = latest.description.replace("<br />", "\n").replace("<p />", "\n")
+        post = BeautifulSoup(post, "lxml").text
+        combo = f"{latest.title} - {pendulum.parse(latest.published, strict=False).format('MMM Do, YYYY')}"
+
+        embed = discord.Embed(
+            title = combo,
+            colour = 0x101921,
+            description = post,
+            url = latest.link
+        )
+
+        embed.set_thumbnail(url=raw_feed.feed.image.href)
+
+        await ctx.send(content=f"**{raw_feed.feed.title}**", embed=embed)
+
 
     @commands.command(name='pick', aliases=['choose', 'random', 'choice'])
     async def pick_something_randomly(self, ctx, *, optional_input: str=None):
