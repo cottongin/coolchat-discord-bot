@@ -313,7 +313,9 @@ class MMACog(commands.Cog, name="MMA"):
         
 
         event_blacklist = [
-            "401210113"
+            "401210113",
+            "401223006",
+            "401210554"
         ]
         now = pendulum.now()
         inp_fut = []
@@ -503,14 +505,17 @@ class MMACog(commands.Cog, name="MMA"):
                         )
                         left_strings.append(left_string)
                         right_strings.append(right_string)
-                        decisions.append(
-                            " | {} - {} ({}) [R{}, {}]".format(
-                                fight['status']['type']['shortDetail'],
-                                fight['status']['result']['shortDisplayName'],
-                                fight['judgesScores'] if fight.get('judgesScores') else fight['status']['result']['description'],
-                                fight['status']['period'], fight['status']['displayClock']
+                        try:
+                            decisions.append(
+                                " | {} - {} ({}) [R{}, {}]".format(
+                                    fight['status']['type']['shortDetail'],
+                                    fight['status']['result']['shortDisplayName'],
+                                    fight['judgesScores'] if fight.get('judgesScores') else fight['status']['result']['description'],
+                                    fight['status']['period'], fight['status']['displayClock']
+                                )
                             )
-                        )
+                        except:
+                            pass
                         divisions.append(
                             " | {}".format(
                                 fight['note']
