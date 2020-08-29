@@ -8,3 +8,4 @@ redis
 feedparser
 bs4
 lxml
+flag
