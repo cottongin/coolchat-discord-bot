@@ -222,8 +222,13 @@ class SportsCog(commands.Cog, name="Sports"):
         home = ""
         details = ""
         mobile_output_string = ""
+        series_summary = ""
 
         for game in games:
+            if game.get("gameType", "") == "P":
+                # if we're a playoff game?
+                if game.get("seriesSummary"):
+                    series_summary = game["seriesSummary"]["seriesStatusShort"]
             away_team = game['teams']['away']['team']['teamName'] \
                 if not mobile_output \
                 else game['teams']['away']['team']['abbreviation']
@@ -329,6 +334,8 @@ class SportsCog(commands.Cog, name="Sports"):
                 home_team += "\n"
                 away += away_team
                 home += home_team
+                if series_summary:
+                    status += f" - {series_summary}"
                 status += "\n"
                 details += status
 
