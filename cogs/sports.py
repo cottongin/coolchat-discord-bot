@@ -77,7 +77,7 @@ class SportsCog(commands.Cog, name="Sports"):
         self.NHL_SCOREBOARD_ENDPOINT = (
             "https://statsapi.web.nhl.com/api/v1/schedule?startDate={}&endDate={}"
             "&expand=schedule.teams,schedule.linescore,schedule.broadcasts.all,"
-            "schedule.ticket,schedule.game.content.media.epg"
+            "schedule.ticket,schedule.game.content.media.epg,schedule.game.seriesSummary"
             "&leaderCategories=&site=en_nhl&teamId=")
         self.MLB_SCOREBOARD_ENDPOINT = (
             'https://statsapi.mlb.com/api/v1/schedule'
@@ -229,6 +229,7 @@ class SportsCog(commands.Cog, name="Sports"):
                 # if we're a playoff game?
                 if game.get("seriesSummary"):
                     series_summary = game["seriesSummary"]["seriesStatusShort"]
+            LOGGER.debug(series_summary)
             away_team = game['teams']['away']['team']['teamName'] \
                 if not mobile_output \
                 else game['teams']['away']['team']['abbreviation']

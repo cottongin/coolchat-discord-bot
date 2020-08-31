@@ -14,12 +14,12 @@ except:
     # heroku stores this
     dev_bot = False
 
-LOGGER = logging.getLogger(__name__)
-coloredlogs.install(level='DEBUG', logger=LOGGER,
-    fmt="[{asctime}] <{name}> {levelname:>8} | {message}",
-    datefmt='%Y-%m-%d %H:%M:%S',
-    style='{'
-)
+# LOGGER = logging.getLogger(__name__)
+# coloredlogs.install(level='DEBUG', logger=LOGGER,
+#     fmt="[{asctime}] <{name}> {levelname:>8} | {message}",
+#     datefmt='%Y-%m-%d %H:%M:%S',
+#     style='{'
+# )
 
 def get_prefix(bot, message):
     """A callable Prefix for our bot. This could be edited to allow per server prefixes."""
