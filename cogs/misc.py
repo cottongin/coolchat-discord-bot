@@ -7,6 +7,7 @@ import pendulum
 import random
 import feedparser
 import aiohttp
+import textwrap
 from bs4 import BeautifulSoup
 
 
@@ -34,35 +35,78 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
         latest = raw_feed.entries[0]
         post = latest.description.replace("<br />", "\n").replace("<p />", "\n")
         post = BeautifulSoup(post, "lxml").text
-        post_extra = []
-        if len(post) > 2048:
-            post_extra.append(post[2048:])
-            post = post[:2048]
+        post_extra = textwrap.wrap(post, width=2048, replace_whitespace=False, drop_whitespace=False)
 
         combo = f"{latest.title} - {pendulum.parse(latest.published, strict=False).format('MMM Do, YYYY')}"
 
+        pages = len(post_extra)
+        cur_page = 1
         embed = discord.Embed(
             title = combo,
             colour = 0x101921,
-            description = post,
+            description = post_extra[cur_page - 1],
             url = latest.link
         )
 
         embed.set_thumbnail(url=post_image)
 
-        await ctx.send(content=f"**{raw_feed.feed.title}**", embed=embed)
+        embed.set_footer(f"Page {cur_page}/{pages}")
 
-        if post_extra:
-            embed = discord.Embed(
-                title = "Continued...",
-                colour = 0x101921,
-                description = post_extra[0],
-                url = latest.link
-            )
+        # await ctx.send(content=f"**{raw_feed.feed.title}**", embed=embed)
+        message = await ctx.send(content=f"**{raw_feed.feed.title}**", embed=embed)
+        # await ctx.send(f"Page {cur_page}/{pages}:\n{contents[cur_page-1]}")
+        # getting the message object for editing and reacting
 
-            embed.set_thumbnail(url=post_image)
+        await message.add_reaction("◀️")
+        await message.add_reaction("▶️")
 
-            await ctx.send(content=f"**{raw_feed.feed.title}**", embed=embed)
+        def check(reaction, user):
+            return user == ctx.author and str(reaction.emoji) in ["◀️", "▶️"]
+            # This makes sure nobody except the command sender can interact with the "menu"
+
+        while True:
+            try:
+                reaction, user = await bot.wait_for("reaction_add", timeout=60, check=check)
+                # waiting for a reaction to be added - times out after x seconds, 60 in this
+                # example
+
+                if str(reaction.emoji) == "▶️" and cur_page != pages:
+                    cur_page += 1
+                    embed.set_description(post_extra[cur_page - 1])
+                    embed.set_footer(f"Page {cur_page}/{pages}")
+                    await message.edit(embed=embed)
+                    await message.remove_reaction(reaction, user)
+
+                elif str(reaction.emoji) == "◀️" and cur_page > 1:
+                    cur_page -= 1
+                    embed.set_description(post_extra[cur_page - 1])
+                    embed.set_footer(f"Page {cur_page}/{pages}")
+                    await message.edit(embed=embed)
+                    await message.remove_reaction(reaction, user)
+
+                else:
+                    await message.remove_reaction(reaction, user)
+                    # removes reactions if the user tries to go forward on the last page or
+                    # backwards on the first page
+            except asyncio.TimeoutError:
+                await message.remove_reaction("◀️")
+                await message.remove_reaction("▶️")
+                # await message.delete()
+                break
+                # ending the loop if user doesn't react after x seconds
+
+
+        # if post_extra:
+        #     embed = discord.Embed(
+        #         title = "Continued...",
+        #         colour = 0x101921,
+        #         description = post_extra[0],
+        #         url = latest.link
+        #     )
+
+        #     embed.set_thumbnail(url=post_image)
+
+        #     await ctx.send(content=f"**{raw_feed.feed.title}**", embed=embed)
 
 
     @commands.command(name='pick', aliases=['choose', 'random', 'choice'])
