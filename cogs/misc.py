@@ -34,6 +34,11 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
         latest = raw_feed.entries[0]
         post = latest.description.replace("<br />", "\n").replace("<p />", "\n")
         post = BeautifulSoup(post, "lxml").text
+        post_extra = []
+        if len(post) > 2048:
+            post_extra.append(post[2048:])
+            post = post[:2048]
+
         combo = f"{latest.title} - {pendulum.parse(latest.published, strict=False).format('MMM Do, YYYY')}"
 
         embed = discord.Embed(
@@ -46,6 +51,18 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
         embed.set_thumbnail(url=post_image)
 
         await ctx.send(content=f"**{raw_feed.feed.title}**", embed=embed)
+
+        if post_extra:
+            embed = discord.Embed(
+                title = "Continued...",
+                colour = 0x101921,
+                description = post_extra[0],
+                url = latest.link
+            )
+
+            embed.set_thumbnail(url=post_image)
+
+            await ctx.send(content=f"**{raw_feed.feed.title}**", embed=embed)
 
 
     @commands.command(name='pick', aliases=['choose', 'random', 'choice'])
