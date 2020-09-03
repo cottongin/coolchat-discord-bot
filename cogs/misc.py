@@ -50,7 +50,7 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
 
         embed.set_thumbnail(url=post_image)
 
-        embed.set_footer(f"Page {cur_page}/{pages}")
+        embed.set_footer(text=f"Page {cur_page}/{pages}")
 
         # await ctx.send(content=f"**{raw_feed.feed.title}**", embed=embed)
         message = await ctx.send(content=f"**{raw_feed.feed.title}**", embed=embed)
@@ -73,14 +73,14 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
                 if str(reaction.emoji) == "▶️" and cur_page != pages:
                     cur_page += 1
                     embed.set_description(post_extra[cur_page - 1])
-                    embed.set_footer(f"Page {cur_page}/{pages}")
+                    embed.set_footer(text=f"Page {cur_page}/{pages}")
                     await message.edit(embed=embed)
                     await message.remove_reaction(reaction, user)
 
                 elif str(reaction.emoji) == "◀️" and cur_page > 1:
                     cur_page -= 1
                     embed.set_description(post_extra[cur_page - 1])
-                    embed.set_footer(f"Page {cur_page}/{pages}")
+                    embed.set_footer(text=f"Page {cur_page}/{pages}")
                     await message.edit(embed=embed)
                     await message.remove_reaction(reaction, user)
 
