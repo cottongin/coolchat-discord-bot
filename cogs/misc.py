@@ -8,6 +8,7 @@ import random
 import feedparser
 import aiohttp
 import textwrap
+import asyncio
 from bs4 import BeautifulSoup
 
 
@@ -66,20 +67,36 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
 
         while True:
             try:
-                reaction, user = await bot.wait_for("reaction_add", timeout=60, check=check)
+                reaction, user = await self.bot.wait_for("reaction_add", timeout=60*5, check=check)
                 # waiting for a reaction to be added - times out after x seconds, 60 in this
                 # example
 
                 if str(reaction.emoji) == "▶️" and cur_page != pages:
                     cur_page += 1
-                    embed.set_description(post_extra[cur_page - 1])
+                    embed = discord.Embed(
+                        title = combo,
+                        colour = 0x101921,
+                        description = post_extra[cur_page - 1],
+                        url = latest.link
+                    )
+
+                    embed.set_thumbnail(url=post_image)
+
                     embed.set_footer(text=f"Page {cur_page}/{pages}")
                     await message.edit(embed=embed)
                     await message.remove_reaction(reaction, user)
 
                 elif str(reaction.emoji) == "◀️" and cur_page > 1:
                     cur_page -= 1
-                    embed.set_description(post_extra[cur_page - 1])
+                    embed = discord.Embed(
+                        title = combo,
+                        colour = 0x101921,
+                        description = post_extra[cur_page - 1],
+                        url = latest.link
+                    )
+
+                    embed.set_thumbnail(url=post_image)
+
                     embed.set_footer(text=f"Page {cur_page}/{pages}")
                     await message.edit(embed=embed)
                     await message.remove_reaction(reaction, user)
@@ -89,8 +106,7 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
                     # removes reactions if the user tries to go forward on the last page or
                     # backwards on the first page
             except asyncio.TimeoutError:
-                await message.remove_reaction("◀️")
-                await message.remove_reaction("▶️")
+                await message.clear_reactions()
                 # await message.delete()
                 break
                 # ending the loop if user doesn't react after x seconds
