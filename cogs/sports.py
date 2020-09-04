@@ -324,6 +324,7 @@ class SportsCog(commands.Cog, name="Sports"):
 
             away_team = "{}{}".format(a_team_emoji, away_team)
             home_team = "{}{}".format(h_team_emoji, home_team)
+            blank = get(ctx.guild.emojis, name="blank")
             if mobile_output:
                 mobile_output_string += "{}{} @ {}{}  |  {}\n".format(
                     away_team, a_score,
@@ -337,7 +338,7 @@ class SportsCog(commands.Cog, name="Sports"):
                 home += home_team
                 if series_summary:
                     status += f" - {series_summary}"
-                status += "\n"
+                status = f"{blank}{status}\n"
                 details += status
 
         embed_data = {
@@ -612,6 +613,7 @@ class SportsCog(commands.Cog, name="Sports"):
 
             away_team = "{}{}".format(a_team_emoji, away_team)
             home_team = "{}{}".format(h_team_emoji, home_team)
+            blank = get(ctx.guild.emojis, name="blank")
             if mobile_output:
                 if not postponed:
                     mobile_output_string += "{}{} @ {}{}  |  {}\n".format(
@@ -631,14 +633,14 @@ class SportsCog(commands.Cog, name="Sports"):
                     home_team += "\n"
                     away += away_team
                     home += home_team
-                    status += "\n"
+                    status = f"{blank}{status}\n"
                     details += status
                 else:
                     away_team += "\n"
                     home_team += "\n"
                     ppd_away += away_team
                     ppd_home += home_team
-                    status += "\n"
+                    status = f"{blank}{status}\n"
                     ppd_details += status
 
         embed_data = {
@@ -849,6 +851,7 @@ class SportsCog(commands.Cog, name="Sports"):
             home_team = self.NBA_TEAMS[game['hTeam']['triCode']] if not mobile_output else game['hTeam']['triCode']
             a_team_emoji = get(ctx.guild.emojis, name="nba_"+game['vTeam']['triCode'].lower())
             h_team_emoji = get(ctx.guild.emojis, name="nba_"+game['hTeam']['triCode'].lower())
+            blank = get(ctx.guild.emojis, name="blank")
             if a_team_emoji:
                 if "lal" in game['vTeam']['triCode'].lower():
                     a_team_emoji = "💩 "
@@ -939,7 +942,7 @@ class SportsCog(commands.Cog, name="Sports"):
                         home_team += "\n"
                         away += away_team
                         home += home_team
-                        status += "\n"
+                        status = f"{blank}{status}\n"
                         details += status
                     games_found += 1
             else:
@@ -954,7 +957,7 @@ class SportsCog(commands.Cog, name="Sports"):
                     home_team += "\n"
                     away += away_team
                     home += home_team
-                    status += "\n"
+                    status = f"{blank}{status}\n"
                     details += status
                 games_found += 1
 
