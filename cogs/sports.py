@@ -338,7 +338,7 @@ class SportsCog(commands.Cog, name="Sports"):
                 home += home_team
                 if series_summary:
                     status += f" - {series_summary}"
-                status = f"{blank}{status}\n"
+                status = f"{status}{blank}\n"
                 details += status
 
         embed_data = {
@@ -633,14 +633,14 @@ class SportsCog(commands.Cog, name="Sports"):
                     home_team += "\n"
                     away += away_team
                     home += home_team
-                    status = f"{blank}{status}\n"
+                    status = f"{status}{blank}\n"
                     details += status
                 else:
                     away_team += "\n"
                     home_team += "\n"
                     ppd_away += away_team
                     ppd_home += home_team
-                    status = f"{blank}{status}\n"
+                    status = f"{status}{blank}\n"
                     ppd_details += status
 
         embed_data = {
@@ -942,7 +942,7 @@ class SportsCog(commands.Cog, name="Sports"):
                         home_team += "\n"
                         away += away_team
                         home += home_team
-                        status = f"{blank}{status}\n"
+                        status = f"{status}{blank}\n"
                         details += status
                     games_found += 1
             else:
@@ -957,7 +957,7 @@ class SportsCog(commands.Cog, name="Sports"):
                     home_team += "\n"
                     away += away_team
                     home += home_team
-                    status = f"{blank}{status}\n"
+                    status = f"{status}{blank}\n"
                     details += status
                 games_found += 1
 
