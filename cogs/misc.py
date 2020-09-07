@@ -20,9 +20,14 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
     
 
     @commands.command(name='albert')
-    async def fetch_latest_albert(self, ctx):
+    async def fetch_latest_albert(self, ctx, *, optional_input: str=None):
         """Retrieves latest Albert post from LiveJournal"""
         url = "https://albert71292.livejournal.com/data/rss"
+        if not optional_input:
+            post_index = 0
+        else:
+            post_index = int(optional_input)
+        post_full_image = None
         raw_feed = feedparser.parse(url)
         async with aiohttp.ClientSession() as session:
             async with session.get(url.replace("/data/rss", "")) as r:
@@ -33,10 +38,17 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
             post_image = raw_html.find('div', class_='entry-userpic').find('img').get('src')
         except:
             post_image = raw_feed.feed.image.href
-        latest = raw_feed.entries[0]
+        latest = raw_feed.entries[post_index]
         post = latest.description.replace("<br />", "\n").replace("<p />", "\n")
-        post = BeautifulSoup(post, "lxml").text
-        post_extra = textwrap.wrap(post, width=2048, replace_whitespace=False, drop_whitespace=False)
+        clean_post = BeautifulSoup(post, "lxml").text
+        if not clean_post:
+            post_full_image = BeautifulSoup(post, "lxml")
+            post_full_image = post_full_image.find("img")
+            if post_full_image:
+                post_full_image = post_full_image.get("src")
+        post_extra = textwrap.wrap(clean_post, width=2048, replace_whitespace=False, drop_whitespace=False)
+        if not post_extra:
+            post_extra = ["\u200b"]
 
         combo = f"{latest.title} - {pendulum.parse(latest.published, strict=False).format('MMM Do, YYYY')}"
 
@@ -48,6 +60,9 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
             description = post_extra[cur_page - 1],
             url = latest.link
         )
+
+        if post_full_image:
+            embed.set_image(url=post_full_image)
 
         embed.set_thumbnail(url=post_image)
 
