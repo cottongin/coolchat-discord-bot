@@ -41,11 +41,11 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
         latest = raw_feed.entries[post_index]
         post = latest.description.replace("<br />", "\n").replace("<p />", "\n")
         clean_post = BeautifulSoup(post, "lxml").text
-        if not clean_post:
-            post_full_image = BeautifulSoup(post, "lxml")
-            post_full_image = post_full_image.find("img")
-            if post_full_image:
-                post_full_image = post_full_image.get("src")
+        # if not clean_post:
+        post_full_image = BeautifulSoup(post, "lxml")
+        post_full_image = post_full_image.find("img")
+        if post_full_image:
+            post_full_image = post_full_image.get("src")
         post_extra = textwrap.wrap(clean_post, width=2048, replace_whitespace=False, drop_whitespace=False)
         if not post_extra:
             post_extra = ["\u200b"]
@@ -97,6 +97,9 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
 
                     embed.set_thumbnail(url=post_image)
 
+                    if post_full_image:
+                        embed.set_image(url=post_full_image)
+
                     embed.set_footer(text=f"Page {cur_page}/{pages}")
                     await message.edit(embed=embed)
                     await message.remove_reaction(reaction, user)
@@ -111,6 +114,9 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
                     )
 
                     embed.set_thumbnail(url=post_image)
+                    
+                    if post_full_image:
+                        embed.set_image(url=post_full_image)
 
                     embed.set_footer(text=f"Page {cur_page}/{pages}")
                     await message.edit(embed=embed)
