@@ -30,7 +30,7 @@ class SportsCog(commands.Cog, name="Sports"):
     def __init__(self, bot):
         self.bot = bot
         self.__name__ = __name__
-        # self.db = redis.from_url(os.environ.get("REDIS_URL"))
+        self.db = redis.from_url(os.environ.get("REDIS_URL"))
 
         self.default_tz = "US/Eastern"
         # ^ If a user doesn't provide a tz what should we use?
@@ -276,8 +276,9 @@ class SportsCog(commands.Cog, name="Sports"):
         sortorder={"2":0, "1":1, "3":2}
         games.sort(key=lambda x: sortorder[x["status"]["type"]["id"]])
 
-        games_date = pendulum.parse(games[0]['date']).in_tz(
-            self.default_other_tz).format("MMM Do")
+        # games_date = pendulum.parse(games[0]['date']).in_tz(
+        #     self.default_other_tz).format("MMM Do")
+        games_date = f"Week #{current_week['week']}"
         number_of_games = len(games)
         # types_of_games = {
         #     'P': ' **PLAYOFF** ',
