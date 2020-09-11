@@ -130,6 +130,40 @@ class SportsCog(commands.Cog, name="Sports"):
         self.MLB_TEAMS = self._fetch_teams("MLB")
         self.NBA_TEAMS = self._fetch_teams("NBA")
         
+        self.NFL_TEAMS = {
+            "ARI": "Arizona Cardinals",
+            "ATL": "Atlanta Falcons",
+            "BAL": "Baltimore Ravens",
+            "BUF": "Buffalo Bills",
+            "CAR": "Carolina Panthers",
+            "CHI": "Chicago Bears",
+            "CIN": "Cincinnati Bengals",
+            "CLE": "Cleveland Browns",
+            "DAL": "Dallas Cowboys",
+            "DEN": "Denver Broncos",
+            "DET": "Detroit Lions",
+            "GB":  "Green Bay Packers",
+            "HOU": "Houston Texans",
+            "IND": "Indianapolis Colts",
+            "JAX": "Jacksonville Jaguars",
+            "KC":  "Kansas City Chiefs",
+            "LAC": "Los Angeles Chargers",
+            "LAR": "Los Angeles Rams",
+            "LV":  "Las Vegas Raiders",
+            "MIA": "Miami Dolphins",
+            "MIN": "Minnesota Vikings",
+            "NE":  "New England Patriots",
+            "NO":  "New Orleans Saints",
+            "NYG": "New York Giants",
+            "NYJ": "New York Jets",
+            "PHI": "Philadelphia Eagles",
+            "PIT": "Pittsburgh Steelers",
+            "SEA": "Seattle Seahawks",
+            "SF":  "San Francisco 49ers",
+            "TB":  "Tampa Bay Buccaneers",
+            "TEN": "Tennessee Titans",
+            "WAS": "Washington Football Team",
+        }
 
     @commands.command(name='sports', pass_context=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
@@ -187,10 +221,10 @@ class SportsCog(commands.Cog, name="Sports"):
                 if arg.replace("-", "").isdigit():
                     date = arg
                 if len(arg.lower()) <= 3:
-                    append_team = self.NHL_TEAMS.get(arg.upper()) or ""
+                    append_team = self.NFL_TEAMS.get(arg.upper()) or ""
                     team = arg.upper()
                 if not append_team:
-                    for full_name, id_ in self.NHL_TEAMS.items():
+                    for full_name, id_ in self.NFL_TEAMS.items():
                         if arg.lower() in full_name.lower():
                             append_team = id_
                             break
@@ -214,6 +248,9 @@ class SportsCog(commands.Cog, name="Sports"):
         
         # url = self.NHL_SCOREBOARD_ENDPOINT.format(date, date) + str(append_team)
         LOGGER.debug("NFL API called for: {}".format(data.url))
+
+        if append_team:
+            LOGGER.debug(append_team)
 
         data = data.json()
         games = data.get('events', {})
@@ -268,6 +305,11 @@ class SportsCog(commands.Cog, name="Sports"):
                 else teams[0]['team']['abbreviation']
             a_team_emoji = get(ctx.guild.emojis, name="nfl_"+teams[1]['team']['abbreviation'].lower())
             h_team_emoji = get(ctx.guild.emojis, name="nfl_"+teams[0]['team']['abbreviation'].lower())
+            if away_team == "Washington":
+                away_team = "Football Team"
+            if home_team == "Washington":
+                home_team = "Football Team"
+            combined_names = f"{teams[1]['team']['displayName']} {teams[0]['team']['displayName']}"
             # if a_team_emoji:
             #     if "mtl" in game['teams']['away']['team']['abbreviation'].lower():
             #         a_team_emoji = "💩 "
@@ -282,6 +324,18 @@ class SportsCog(commands.Cog, name="Sports"):
             #     h_team_emoji = ""
             if game['status']['type']['state'] == 'in':
                 score_bug = game['competitions'][0]['competitors']
+                try:
+                    situation = game_details['situation']
+                except:
+                    situation = None
+                if situation:
+                    if situation.get('possession'):
+                        for idx, team in enumerate(score_bug):
+                            if situation['possession'] == team['id']:
+                                if idx == 0:
+                                    away_team += ":football:"
+                                else:
+                                    home_team += ":football:"
                 a_score = int(score_bug[1]['score'])
                 h_score = int(score_bug[0]['score'])
                 # TODO: redzone
@@ -300,11 +354,15 @@ class SportsCog(commands.Cog, name="Sports"):
                     h_score = "**{}**".format(h_score)
                     home_team = "**{}**".format(home_team)
                 try:
-                    ordinal = game['status']['type']['shortDetail'].split('- ')[1]
+                    ordinal = " " + game['status']['type']['shortDetail'].split('- ')[1]
                 except:
                     ordinal = ""
-                time = "__{}__ {}".format(
-                    game['status']['displayClock'],
+                if game['status']['type']['shortDetail'] == 'Halftime':
+                    time_left = "Halftime"
+                else:
+                    time_left = game['status']['displayClock']
+                time = "__{}__{}".format(
+                    time_left,
                     ordinal,                    
                 )
                 # TODO: halftime
@@ -315,6 +373,12 @@ class SportsCog(commands.Cog, name="Sports"):
                 #         )
                 if not mobile_output:
                     status = "{} - {} [{}]".format(a_score, h_score, time)
+                    if append_team:
+                        try:
+                            status += f" - {situation['downDistanceText']}\n"
+                            status += f"{situation['lastPlay']['text']}"
+                        except:
+                            pass
                 else:
                     status = "[{}]".format(time)
                     a_score = " {}".format(a_score)
@@ -361,21 +425,39 @@ class SportsCog(commands.Cog, name="Sports"):
             away_team = "{}{}".format(a_team_emoji, away_team)
             home_team = "{}{}".format(h_team_emoji, home_team)
             blank = get(ctx.guild.emojis, name="blank")
-            if mobile_output:
-                mobile_output_string += "{}{} @ {}{}  |  {}\n".format(
-                    away_team, a_score,
-                    home_team, h_score,
-                    status
-                )
+            if append_team:
+                if append_team in combined_names:
+                    if mobile_output:
+                        mobile_output_string += "{}{} @ {}{}  |  {}\n".format(
+                            away_team, a_score,
+                            home_team, h_score,
+                            status
+                        )
+                    else:
+                        away_team += "\n"
+                        home_team += "\n"
+                        away += away_team
+                        home += home_team
+                        # if series_summary:
+                        #     status += f" - {series_summary}"
+                        status = f"{status}{blank}\n"
+                        details += status
             else:
-                away_team += "\n"
-                home_team += "\n"
-                away += away_team
-                home += home_team
-                # if series_summary:
-                #     status += f" - {series_summary}"
-                status = f"{status}{blank}\n"
-                details += status
+                if mobile_output:
+                    mobile_output_string += "{}{} @ {}{}  |  {}\n".format(
+                        away_team, a_score,
+                        home_team, h_score,
+                        status
+                    )
+                else:
+                    away_team += "\n"
+                    home_team += "\n"
+                    away += away_team
+                    home += home_team
+                    # if series_summary:
+                    #     status += f" - {series_summary}"
+                    status = f"{status}{blank}\n"
+                    details += status
 
         embed_data = {
             "league":          "NFL",
