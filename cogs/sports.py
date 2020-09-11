@@ -129,6 +129,7 @@ class SportsCog(commands.Cog, name="Sports"):
         self.NHL_TEAMS = self._fetch_teams("NHL")
         self.MLB_TEAMS = self._fetch_teams("MLB")
         self.NBA_TEAMS = self._fetch_teams("NBA")
+        
 
     @commands.command(name='sports', pass_context=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
@@ -279,33 +280,39 @@ class SportsCog(commands.Cog, name="Sports"):
             #     h_team_emoji = "{} ".format(h_team_emoji)
             # else:
             #     h_team_emoji = ""
-            if game['status']['type']['state'] == 'live':
-                score_bug = game['linescore']
-                a_score = score_bug['teams']['away']['goals']
-                h_score = score_bug['teams']['home']['goals']
-                if score_bug['teams']['away'].get('powerPlay'):
-                    away_team += " (**PP {}**)".format(
-                        self._convert_seconds(score_bug['powerPlayInfo']['situationTimeRemaining'])
-                    )
-                if score_bug['teams']['home'].get('powerPlay'):
-                    home_team += " (**PP {}**)".format(
-                        self._convert_seconds(score_bug['powerPlayInfo']['situationTimeRemaining'])
-                    )
+            if game['status']['type']['state'] == 'in':
+                score_bug = game['competitions'][0]['competitors']
+                a_score = int(score_bug[1]['score'])
+                h_score = int(score_bug[0]['score'])
+                # TODO: redzone
+                # if score_bug['teams']['away'].get('powerPlay'):
+                #     away_team += " (**PP {}**)".format(
+                #         self._convert_seconds(score_bug['powerPlayInfo']['situationTimeRemaining'])
+                #     )
+                # if score_bug['teams']['home'].get('powerPlay'):
+                #     home_team += " (**PP {}**)".format(
+                #         self._convert_seconds(score_bug['powerPlayInfo']['situationTimeRemaining'])
+                #     )
                 if a_score > h_score:
                     a_score = "**{}**".format(a_score)
                     away_team = "**{}**".format(away_team)
                 elif h_score > a_score:
                     h_score = "**{}**".format(h_score)
                     home_team = "**{}**".format(home_team)
+                try:
+                    ordinal = game['status']['type']['shortDetail'].split('- ')[1]
+                except:
+                    ordinal = ""
                 time = "__{}__ {}".format(
-                    score_bug['currentPeriodTimeRemaining'],
-                    score_bug['currentPeriodOrdinal']
+                    game['status']['displayClock'],
+                    ordinal,                    
                 )
-                if score_bug['intermissionInfo'].get('inIntermission'):
-                    if score_bug['intermissionInfo']['intermissionTimeRemaining'] > 0:
-                        time += " **INT {}**".format(
-                            self._convert_seconds(score_bug['intermissionInfo']['intermissionTimeRemaining'])
-                        )
+                # TODO: halftime
+                # if score_bug['intermissionInfo'].get('inIntermission'):
+                #     if score_bug['intermissionInfo']['intermissionTimeRemaining'] > 0:
+                #         time += " **INT {}**".format(
+                #             self._convert_seconds(score_bug['intermissionInfo']['intermissionTimeRemaining'])
+                #         )
                 if not mobile_output:
                     status = "{} - {} [{}]".format(a_score, h_score, time)
                 else:
@@ -338,7 +345,7 @@ class SportsCog(commands.Cog, name="Sports"):
             else:
                 try:
                     status = pendulum.parse(game['date']).in_tz(timezone or user_timezone or self.default_tz).format(
-                        "h:mm A zz"
+                        "MMM Do h:mm A zz"
                     )
                     if int(game['status']['period']) > 0:
                         # Pre-game
@@ -1028,7 +1035,7 @@ class SportsCog(commands.Cog, name="Sports"):
             "COVID19 gonna cancel this shit",
             "Rob Manfred is a joke",
             "imagine trading Mookie Betts",
-            "The Astros :astros: are a bunch of cheaters",
+            "The Astros \:astros: are a bunch of cheaters",
             "FUCK THE YANKEES",
             "imagine 60 games counting as a 'full season'",
         ]
