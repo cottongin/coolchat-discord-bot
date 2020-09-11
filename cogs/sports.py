@@ -30,7 +30,7 @@ class SportsCog(commands.Cog, name="Sports"):
     def __init__(self, bot):
         self.bot = bot
         self.__name__ = __name__
-        self.db = redis.from_url(os.environ.get("REDIS_URL"))
+        # self.db = redis.from_url(os.environ.get("REDIS_URL"))
 
         self.default_tz = "US/Eastern"
         # ^ If a user doesn't provide a tz what should we use?
@@ -273,6 +273,9 @@ class SportsCog(commands.Cog, name="Sports"):
         #         ))
         #         return
 
+        sortorder={"2":0, "1":1, "3":2}
+        games.sort(key=lambda x: sortorder[x["status"]["type"]["id"]])
+
         games_date = pendulum.parse(games[0]['date']).in_tz(
             self.default_other_tz).format("MMM Do")
         number_of_games = len(games)
@@ -384,20 +387,65 @@ class SportsCog(commands.Cog, name="Sports"):
                     a_score = " {}".format(a_score)
                     h_score = " {}".format(h_score)
             elif game['status']['type']['completed']: # == 'Final':
-                score_bug = game['linescore']
-                a_score = score_bug['teams']['away']['goals']
-                h_score = score_bug['teams']['home']['goals']
+                score_bug = game['competitions'][0]['competitors']
+                # try:
+                #     situation = game_details['situation']
+                # except:
+                #     situation = None
+                # if situation:
+                #     if situation.get('possession'):
+                #         for idx, team in enumerate(score_bug):
+                #             if situation['possession'] == team['id']:
+                #                 if idx == 0:
+                #                     away_team += ":football:"
+                #                 else:
+                #                     home_team += ":football:"
+                a_score = int(score_bug[1]['score'])
+                h_score = int(score_bug[0]['score'])
+                # TODO: redzone
+                # if score_bug['teams']['away'].get('powerPlay'):
+                #     away_team += " (**PP {}**)".format(
+                #         self._convert_seconds(score_bug['powerPlayInfo']['situationTimeRemaining'])
+                #     )
+                # if score_bug['teams']['home'].get('powerPlay'):
+                #     home_team += " (**PP {}**)".format(
+                #         self._convert_seconds(score_bug['powerPlayInfo']['situationTimeRemaining'])
+                #     )
                 if a_score > h_score:
                     a_score = "**{}**".format(a_score)
                     away_team = "**{}**".format(away_team)
                 elif h_score > a_score:
                     h_score = "**{}**".format(h_score)
                     home_team = "**{}**".format(home_team)
-                time = "_Final_" # if not mobile_output else "_F_"
-                if game['linescore']['currentPeriod'] >= 4:
-                    time = "_Final/OT_" # if not mobile_output else "_F/OT_"
+                # try:
+                #     ordinal = " " + game['status']['type']['shortDetail'].split('- ')[1]
+                # except:
+                #     ordinal = ""
+                # if game['status']['type']['shortDetail'] == 'Halftime':
+                #     time_left = "Halftime"
+                # else:
+                #     time_left = game['status']['displayClock']
+                if game['status']['period'] > 4:
+                    time_left = f"Final/{'{}'.format(game['status']['period']-4 if game['status']['period'] > 5 else '')}OT"
+                else:
+                    time_left = "Final"
+                time = "_{}_".format(
+                    time_left,                  
+                )
+                # TODO: halftime
+                # if score_bug['intermissionInfo'].get('inIntermission'):
+                #     if score_bug['intermissionInfo']['intermissionTimeRemaining'] > 0:
+                #         time += " **INT {}**".format(
+                #             self._convert_seconds(score_bug['intermissionInfo']['intermissionTimeRemaining'])
+                #         )
                 if not mobile_output:
                     status = "{} - {} {}".format(a_score, h_score, time)
+                    # if append_team:
+                    #     try:
+                    #         status += f" - {situation['downDistanceText']}\n"
+                    #         status += f"{situation['lastPlay']['text']}"
+                    #     except:
+                    #         pass
                 else:
                     status = "{}".format(time)
                     a_score = " {}".format(a_score)
