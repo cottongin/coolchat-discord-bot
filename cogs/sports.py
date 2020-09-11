@@ -30,7 +30,7 @@ class SportsCog(commands.Cog, name="Sports"):
     def __init__(self, bot):
         self.bot = bot
         self.__name__ = __name__
-        self.db = redis.from_url(os.environ.get("REDIS_URL"))
+        # self.db = redis.from_url(os.environ.get("REDIS_URL"))
 
         self.default_tz = "US/Eastern"
         # ^ If a user doesn't provide a tz what should we use?
@@ -300,6 +300,9 @@ class SportsCog(commands.Cog, name="Sports"):
             #         series_summary = game["seriesSummary"]["seriesStatusShort"]
             # LOGGER.debug(series_summary)
             game_details = game['competitions'][0]
+            odds = game_details.get('odds', {})
+            if odds: odds = odds[0]
+            LOGGER.debug(odds)
             teams = game_details['competitors']
             away_team = teams[1]['team']['shortDisplayName'] \
                 if not mobile_output \
@@ -468,6 +471,8 @@ class SportsCog(commands.Cog, name="Sports"):
                     #     status = "Time TBD"
                 except:
                     status = ""
+                if append_team and odds:
+                    status += f" (Odds: {odds['details']}, ⇕ {odds['overUnder']})"
                 a_score = ""
                 h_score = ""
 
