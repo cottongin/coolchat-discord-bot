@@ -95,6 +95,36 @@ class SportsCog(commands.Cog, name="Sports"):
         self.NBA_SCOREBOARD_ENDPOINT = (
             "https://data.nba.net/10s/prod/v2/{}/scoreboard.json"
         )
+        self.NFL_SCOREBOARD_ENDPOINT = (
+            "https://site.api.espn.com/apis/site/v2/sports/football/nfl/"
+            "scoreboard?lang=en&region=us&calendartype=blacklist&limit=100"
+            "&showAirings=true&dates=2020&seasontype={type}&week={week}"
+        )
+        self.NFL_AUTH = None
+        self.NFL_WEEKS = {
+            '2020-09-09': {'week':  1, 'type': 2},
+            '2020-09-16': {'week':  2, 'type': 2},
+            '2020-09-23': {'week':  3, 'type': 2},
+            '2020-09-30': {'week':  4, 'type': 2},
+            '2020-10-07': {'week':  5, 'type': 2},
+            '2020-10-14': {'week':  6, 'type': 2},
+            '2020-10-21': {'week':  7, 'type': 2},
+            '2020-10-28': {'week':  8, 'type': 2},
+            '2020-11-04': {'week':  9, 'type': 2},
+            '2020-11-11': {'week': 10, 'type': 2},
+            '2020-11-18': {'week': 11, 'type': 2},
+            '2020-11-25': {'week': 12, 'type': 2},
+            '2020-12-02': {'week': 13, 'type': 2},
+            '2020-12-09': {'week': 14, 'type': 2},
+            '2020-12-16': {'week': 15, 'type': 2},
+            '2020-12-23': {'week': 16, 'type': 2},
+            '2020-12-30': {'week': 17, 'type': 2},
+            '2021-01-06': {'week':  1, 'type': 3},
+            '2021-01-13': {'week':  2, 'type': 3},
+            '2021-01-20': {'week':  3, 'type': 3},
+            '2021-01-27': {'week':  4, 'type': 3},
+            '2021-02-03': {'week':  5, 'type': 3},
+        }
 
         self.NHL_TEAMS = self._fetch_teams("NHL")
         self.MLB_TEAMS = self._fetch_teams("MLB")
@@ -108,6 +138,260 @@ class SportsCog(commands.Cog, name="Sports"):
         await ctx.invoke(self.bot.get_command('nhl'), optional_input=optional_input)
         await ctx.invoke(self.bot.get_command('mlb'), optional_input=optional_input)
         await ctx.invoke(self.bot.get_command('nba'), optional_input=optional_input)
+        await ctx.invoke(self.bot.get_command('nfl'), optional_input=optional_input)
+
+
+    @commands.command(name='nfl', aliases=['nflscores', 'football'])
+    @commands.cooldown(1, 5, commands.BucketType.user)
+    async def do_nfl_scores(self, ctx, *, optional_input: str=None):
+        """Fetches NFL scores from NFL.com"""
+        now = pendulum.now()
+        for week in self.NFL_WEEKS:
+            check = pendulum.parse(week, strict=False)
+            if check < now < check.add(days=7):
+                current_week = self.NFL_WEEKS[week]
+                break
+        data = requests.get(self.NFL_SCOREBOARD_ENDPOINT.format(**current_week))
+        print(data.url)
+        # data = data.json()
+
+        mobile_output = False
+        member = ctx.author
+        member_id = str(member.id)
+        if member.is_on_mobile():
+            mobile_output = True
+
+        user_timezone = self.user_db.get(member_id, {}).get('timezone')
+        # LOGGER.debug((user_timezone, self.user_db))
+
+        date = pendulum.now().in_tz(self.default_now_tz).format("YYYY-MM-DD")
+        append_team = ""
+        team = ""
+        timezone = None
+        if optional_input:
+            args = optional_input.split()
+            for idx, arg in enumerate(args):
+                if arg == "--tz":
+                    # grab the user-defined timezone
+                    timezone = args[idx + 1]
+                    # see if it's a short-hand timezone first
+                    timezone = self.short_tzs.get(timezone.lower()) or timezone
+                    # now check if it's valid
+                    try:
+                        _ = pendulum.timezone(timezone)
+                    except:
+                        await ctx.send("Sorry that is an invalid timezone "
+                            "(try one from https://nodatime.org/TimeZones)")
+                        return
+                if arg.replace("-", "").isdigit():
+                    date = arg
+                if len(arg.lower()) <= 3:
+                    append_team = self.NHL_TEAMS.get(arg.upper()) or ""
+                    team = arg.upper()
+                if not append_team:
+                    for full_name, id_ in self.NHL_TEAMS.items():
+                        if arg.lower() in full_name.lower():
+                            append_team = id_
+                            break
+                if arg.lower() == "tomorrow":
+                    date = pendulum.tomorrow().in_tz(
+                        user_timezone or \
+                        self.default_other_tz).format("YYYY-MM-DD")
+                elif arg.lower() == "yesterday":
+                    date = pendulum.yesterday().in_tz(
+                        user_timezone or \
+                        self.default_other_tz).format("YYYY-MM-DD")
+            
+            if optional_input.lower() == "tomorrow":
+                date = pendulum.tomorrow().in_tz(
+                    user_timezone or \
+                    self.default_other_tz).format("YYYY-MM-DD")
+            elif optional_input.lower() == "yesterday":
+                date = pendulum.yesterday().in_tz(
+                    user_timezone or \
+                    self.default_other_tz).format("YYYY-MM-DD")
+        
+        # url = self.NHL_SCOREBOARD_ENDPOINT.format(date, date) + str(append_team)
+        LOGGER.debug("NFL API called for: {}".format(data.url))
+
+        data = data.json()
+        games = data.get('events', {})
+        if not games:
+            LOGGER.warn("Something went wrong possibly. (NFL)")
+            await ctx.send(
+                "I couldn't find any NFL games for {team}{date}.".format(
+                    team="{} on ".format(team) if team else "",
+                    date=date
+            ))
+            return
+        # else:
+        #     games = games[0].get('games', {})
+        #     if not games:
+        #         LOGGER.warn("Something went wrong possibly. (NHL)")
+        #         await ctx.send(
+        #             "I couldn't find any NHL games for {team}{date}.".format(
+        #                 team="{} on ".format(team) if team else "",
+        #                 date=date
+        #         ))
+        #         return
+
+        games_date = pendulum.parse(games[0]['date']).in_tz(
+            self.default_other_tz).format("MMM Do")
+        number_of_games = len(games)
+        # types_of_games = {
+        #     'P': ' **PLAYOFF** ',
+        #     'R': ' Regular season ',
+        #     'Pre': ' Pre-season ',
+        # }
+        # type_ = types_of_games.get(games[0]['gameType'], ' ')
+
+        away = ""
+        home = ""
+        details = ""
+        mobile_output_string = ""
+        # series_summary = ""
+
+        for game in games:
+            # if game.get("gameType", "") == "P":
+            #     # if we're a playoff game?
+            #     if game.get("seriesSummary"):
+            #         series_summary = game["seriesSummary"]["seriesStatusShort"]
+            # LOGGER.debug(series_summary)
+            game_details = game['competitions'][0]
+            teams = game_details['competitors']
+            away_team = teams[1]['team']['shortDisplayName'] \
+                if not mobile_output \
+                else teams[1]['team']['abbreviation']
+            home_team = teams[0]['team']['shortDisplayName'] \
+                if not mobile_output \
+                else teams[0]['team']['abbreviation']
+            a_team_emoji = get(ctx.guild.emojis, name="nfl_"+teams[1]['team']['abbreviation'].lower())
+            h_team_emoji = get(ctx.guild.emojis, name="nfl_"+teams[0]['team']['abbreviation'].lower())
+            # if a_team_emoji:
+            #     if "mtl" in game['teams']['away']['team']['abbreviation'].lower():
+            #         a_team_emoji = "💩 "
+            #     a_team_emoji = "{} ".format(a_team_emoji)
+            # else:
+            #     a_team_emoji = ""
+            # if h_team_emoji:
+            #     if "mtl" in game['teams']['home']['team']['abbreviation'].lower():
+            #         h_team_emoji = "💩 "
+            #     h_team_emoji = "{} ".format(h_team_emoji)
+            # else:
+            #     h_team_emoji = ""
+            if game['status']['type']['state'] == 'live':
+                score_bug = game['linescore']
+                a_score = score_bug['teams']['away']['goals']
+                h_score = score_bug['teams']['home']['goals']
+                if score_bug['teams']['away'].get('powerPlay'):
+                    away_team += " (**PP {}**)".format(
+                        self._convert_seconds(score_bug['powerPlayInfo']['situationTimeRemaining'])
+                    )
+                if score_bug['teams']['home'].get('powerPlay'):
+                    home_team += " (**PP {}**)".format(
+                        self._convert_seconds(score_bug['powerPlayInfo']['situationTimeRemaining'])
+                    )
+                if a_score > h_score:
+                    a_score = "**{}**".format(a_score)
+                    away_team = "**{}**".format(away_team)
+                elif h_score > a_score:
+                    h_score = "**{}**".format(h_score)
+                    home_team = "**{}**".format(home_team)
+                time = "__{}__ {}".format(
+                    score_bug['currentPeriodTimeRemaining'],
+                    score_bug['currentPeriodOrdinal']
+                )
+                if score_bug['intermissionInfo'].get('inIntermission'):
+                    if score_bug['intermissionInfo']['intermissionTimeRemaining'] > 0:
+                        time += " **INT {}**".format(
+                            self._convert_seconds(score_bug['intermissionInfo']['intermissionTimeRemaining'])
+                        )
+                if not mobile_output:
+                    status = "{} - {} [{}]".format(a_score, h_score, time)
+                else:
+                    status = "[{}]".format(time)
+                    a_score = " {}".format(a_score)
+                    h_score = " {}".format(h_score)
+            elif game['status']['type']['completed']: # == 'Final':
+                score_bug = game['linescore']
+                a_score = score_bug['teams']['away']['goals']
+                h_score = score_bug['teams']['home']['goals']
+                if a_score > h_score:
+                    a_score = "**{}**".format(a_score)
+                    away_team = "**{}**".format(away_team)
+                elif h_score > a_score:
+                    h_score = "**{}**".format(h_score)
+                    home_team = "**{}**".format(home_team)
+                time = "_Final_" # if not mobile_output else "_F_"
+                if game['linescore']['currentPeriod'] >= 4:
+                    time = "_Final/OT_" # if not mobile_output else "_F/OT_"
+                if not mobile_output:
+                    status = "{} - {} {}".format(a_score, h_score, time)
+                else:
+                    status = "{}".format(time)
+                    a_score = " {}".format(a_score)
+                    h_score = " {}".format(h_score)
+            elif game['status']['type']['description'] == 'Postponed':
+                status = "PPD"
+                a_score = ""
+                h_score = ""
+            else:
+                try:
+                    status = pendulum.parse(game['date']).in_tz(timezone or user_timezone or self.default_tz).format(
+                        "h:mm A zz"
+                    )
+                    if int(game['status']['period']) > 0:
+                        # Pre-game
+                        status += " [Warmup]"
+                    # if "AM" == pendulum.parse(game['gameDate']).in_tz(self.default_tz).format("A") and \
+                    #    int(status.split(":")[0]) < 10: #or game['stats'].get('startTimeTBD'):
+                    #     status = "Time TBD"
+                except:
+                    status = ""
+                a_score = ""
+                h_score = ""
+
+            away_team = "{}{}".format(a_team_emoji, away_team)
+            home_team = "{}{}".format(h_team_emoji, home_team)
+            blank = get(ctx.guild.emojis, name="blank")
+            if mobile_output:
+                mobile_output_string += "{}{} @ {}{}  |  {}\n".format(
+                    away_team, a_score,
+                    home_team, h_score,
+                    status
+                )
+            else:
+                away_team += "\n"
+                home_team += "\n"
+                away += away_team
+                home += home_team
+                # if series_summary:
+                #     status += f" - {series_summary}"
+                status = f"{status}{blank}\n"
+                details += status
+
+        embed_data = {
+            "league":          "NFL",
+            "games_date":      games_date,
+            "number_of_games": number_of_games,
+            "mobile":          mobile_output_string,
+            "away":            away,
+            "home":            home,
+            "status":          details,
+            "copyright":       "",
+            "icon":            "https://static.www.nfl.com/image/upload/v1554321393/league/nvfr7ogywskqrfaiu38m.png",
+            "thumbnail":       "https://static.www.nfl.com/image/upload/v1554321393/league/nvfr7ogywskqrfaiu38m.png",
+        }
+
+        embed = self._build_embed(embed_data, mobile_output, 0x003069)
+
+        if timezone:
+            if not self.user_db.get(member_id):
+                self.user_db[member_id] = {}
+            self.user_db[member_id]['timezone'] = timezone
+            self._save()
+
+        await ctx.send(embed=embed)
 
 
     @commands.command(name='nhl', aliases=['nhlscores', 'hockey'])
