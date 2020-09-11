@@ -30,7 +30,10 @@ class SportsCog(commands.Cog, name="Sports"):
     def __init__(self, bot):
         self.bot = bot
         self.__name__ = __name__
-        self.db = redis.from_url(os.environ.get("REDIS_URL"))
+        try:
+            self.db = redis.from_url(os.environ.get("REDIS_URL"), socket_timeout=3)
+        except:
+            pass
 
         self.default_tz = "US/Eastern"
         # ^ If a user doesn't provide a tz what should we use?
@@ -162,7 +165,8 @@ class SportsCog(commands.Cog, name="Sports"):
             "SF":  "San Francisco 49ers",
             "TB":  "Tampa Bay Buccaneers",
             "TEN": "Tennessee Titans",
-            "WAS": "Washington Football Team",
+            "WAS": "Washington",
+            "WSH": "Washington",
         }
 
     @commands.command(name='sports', pass_context=True)
@@ -317,6 +321,7 @@ class SportsCog(commands.Cog, name="Sports"):
             if home_team == "Washington":
                 home_team = "Football Team"
             combined_names = f"{teams[1]['team']['displayName']} {teams[0]['team']['displayName']}"
+            LOGGER.debug(combined_names)
             # if a_team_emoji:
             #     if "mtl" in game['teams']['away']['team']['abbreviation'].lower():
             #         a_team_emoji = "💩 "
