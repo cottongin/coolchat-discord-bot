@@ -472,7 +472,7 @@ class SportsCog(commands.Cog, name="Sports"):
                 except:
                     status = ""
                 if append_team and odds:
-                    status += f" (Odds: {odds['details']}, ⇕ {odds['overUnder']})"
+                    status += f"\n(Odds: {odds['details']}, ⇕ {odds['overUnder']})"
                 a_score = ""
                 h_score = ""
 
