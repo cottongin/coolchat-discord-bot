@@ -474,6 +474,9 @@ class SportsCog(commands.Cog, name="Sports"):
                     if int(game['status']['period']) > 0:
                         # Pre-game
                         status += " [Warmup]"
+                        if not append_team:
+                            away_team += "\n"
+                            home_team += "\n"
                     # if "AM" == pendulum.parse(game['gameDate']).in_tz(self.default_tz).format("A") and \
                     #    int(status.split(":")[0]) < 10: #or game['stats'].get('startTimeTBD'):
                     #     status = "Time TBD"
