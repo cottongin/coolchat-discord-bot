@@ -309,7 +309,6 @@ class SportsCog(commands.Cog, name="Sports"):
             game_details = game['competitions'][0]
             odds = game_details.get('odds', {})
             if odds: odds = odds[0]
-            LOGGER.debug(odds)
             teams = game_details['competitors']
             away_team = teams[1]['team']['shortDisplayName'] \
                 if not mobile_output \
@@ -324,7 +323,6 @@ class SportsCog(commands.Cog, name="Sports"):
             if home_team == "Washington":
                 home_team = "Football Team"
             combined_names = f"{teams[1]['team']['displayName']} {teams[0]['team']['displayName']}"
-            LOGGER.debug(combined_names)
             # if a_team_emoji:
             #     if "mtl" in game['teams']['away']['team']['abbreviation'].lower():
             #         a_team_emoji = "💩 "
@@ -390,8 +388,10 @@ class SportsCog(commands.Cog, name="Sports"):
                     status = "{} - {} [{}]".format(a_score, h_score, time)
                     if append_team:
                         try:
-                            status += f" - {situation['downDistanceText']}\n"
-                            status += f"{situation['lastPlay']['text']}"
+                            if situation.get('downDistanceText'):
+                                status += f" - {situation['downDistanceText']}"
+                            if situation.get('lastPlay'):
+                                status += f"\nPrev. Play: {situation['lastPlay']['text']}"
                         except:
                             pass
                 else:
