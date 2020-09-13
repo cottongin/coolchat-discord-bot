@@ -277,7 +277,10 @@ class SportsCog(commands.Cog, name="Sports"):
         #         ))
         #         return
 
-        sortorder={"2":0, "1":1, "3":2}
+        sortorder={"2":  0,
+                   "23": 1,
+                   "1":  2,
+                   "3":  3}
         games.sort(key=lambda x: sortorder[x["status"]["type"]["id"]])
 
         # games_date = pendulum.parse(games[0]['date']).in_tz(
