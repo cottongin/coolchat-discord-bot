@@ -317,8 +317,8 @@ class SportsCog(commands.Cog, name="Sports"):
             home_team = teams[0]['team']['shortDisplayName'] \
                 if not mobile_output \
                 else teams[0]['team']['abbreviation']
-            a_team_emoji = get(ctx.guild.emojis, name="nfl_"+teams[1]['team']['abbreviation'].lower())
-            h_team_emoji = get(ctx.guild.emojis, name="nfl_"+teams[0]['team']['abbreviation'].lower())
+            a_team_emoji = get(ctx.guild.emojis, name="nfl_"+teams[1]['team']['abbreviation'].lower()) or ""
+            h_team_emoji = get(ctx.guild.emojis, name="nfl_"+teams[0]['team']['abbreviation'].lower()) or ""
             if away_team == "Washington":
                 away_team = "Football Team"
             if home_team == "Washington":
@@ -469,18 +469,27 @@ class SportsCog(commands.Cog, name="Sports"):
                 h_score = ""
             else:
                 try:
-                    status = pendulum.parse(game['date']).in_tz(timezone or user_timezone or self.default_tz).format(
-                        "MMM Do h:mm A zz"
-                    )
+                    game_date = pendulum.parse(game['date']).in_tz(timezone or user_timezone or self.default_tz)
+                    today = pendulum.now().in_tz(timezone or user_timezone or self.default_tz)
+                    tomorrow = pendulum.tomorrow().in_tz(timezone or user_timezone or self.default_tz)
+                    if game_date.is_same_day(today):
+                        status = game_date.format(
+                            "h:mm A zz"
+                        )
+                    elif game_date.is_same_day(tomorrow):
+                        status = game_date.format(
+                            "[Tomorrow], h:mm A zz"
+                        )
+                    else:
+                        status = game_date.format(
+                            "dddd, h:mm A zz"
+                        )
                     if int(game['status']['period']) > 0:
                         # Pre-game
                         status += " [Warmup]"
                         if not append_team:
                             away_team += "\n"
                             home_team += "\n"
-                    # if "AM" == pendulum.parse(game['gameDate']).in_tz(self.default_tz).format("A") and \
-                    #    int(status.split(":")[0]) < 10: #or game['stats'].get('startTimeTBD'):
-                    #     status = "Time TBD"
                 except:
                     status = ""
                 if append_team and odds:
@@ -490,7 +499,7 @@ class SportsCog(commands.Cog, name="Sports"):
 
             away_team = "{}{}".format(a_team_emoji, away_team)
             home_team = "{}{}".format(h_team_emoji, home_team)
-            blank = get(ctx.guild.emojis, name="blank")
+            blank = get(ctx.guild.emojis, name="blank") or ""
             if append_team:
                 if append_team in combined_names:
                     if mobile_output:
