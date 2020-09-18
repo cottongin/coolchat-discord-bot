@@ -502,6 +502,7 @@ class SportsCog(commands.Cog, name="Sports"):
             blank = get(ctx.guild.emojis, name="blank") or ""
             if append_team:
                 if append_team in combined_names:
+                    number_of_games = 1
                     if mobile_output:
                         mobile_output_string += "{}{} @ {}{}  |  {}\n".format(
                             away_team, a_score,
