@@ -371,7 +371,7 @@ class SportsCog(commands.Cog, name="Sports"):
                 try:
                     ordinal = " " + game['status']['type']['shortDetail'].split('- ')[1]
                 except:
-                    ordinal = ""
+                    ordinal = " _{}_".format(game['status']['type']['shortDetail'])
                 if game['status']['type']['shortDetail'] == 'Halftime':
                     time_left = "Halftime"
                 else:
