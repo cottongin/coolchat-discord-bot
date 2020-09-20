@@ -488,9 +488,9 @@ class SportsCog(commands.Cog, name="Sports"):
                     if int(game['status']['period']) > 0:
                         # Pre-game
                         status += " [Warmup]"
-                        if not append_team:
-                            away_team += "\n"
-                            home_team += "\n"
+                        # if not append_team:
+                        #     away_team += "\n"
+                        #     home_team += "\n"
                 except:
                     status = ""
                 if append_team and odds:
