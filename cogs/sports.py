@@ -912,8 +912,8 @@ class SportsCog(commands.Cog, name="Sports"):
                     if game['teams']['away']['team']['id'] == _['teams']['away']['team']['id'] or \
                        game['teams']['away']['team']['id'] == _['teams']['home']['team']['id']:
                         if _['doubleHeader'] and _['gameNumber'] == 1:
-                            # finally, hack the start time and move on
-                            game['gameDate'] = pendulum.parse(_['gameDate']).add(minutes=5).to_iso8601_string()
+                            # finally, hack the start time and move on #.add(seconds=5)
+                            game['gameDate'] = pendulum.parse(_['gameDate']).to_iso8601_string()
                             break
         
         # now sort everything by start time first, then put the finished games
