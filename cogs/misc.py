@@ -19,6 +19,17 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
         self.__name__ = __name__
     
 
+    @commands.command(name='friday')
+    async def friday(self, ctx):
+        """Friday"""
+        today = pendulum.today()
+        if today.day_of_week != 5:
+            await ctx.send("It isn't Friday idiot.")
+            return
+        image_url = 'https://img.cottongin.xyz/i/friday.png'
+        await ctx.send(image_url)
+    
+    
     @commands.command(name='albert')
     async def fetch_latest_albert(self, ctx, *, optional_input: str=None):
         """Retrieves latest Albert post from LiveJournal"""
