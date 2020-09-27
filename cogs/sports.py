@@ -372,6 +372,8 @@ class SportsCog(commands.Cog, name="Sports"):
                     ordinal = " " + game['status']['type']['shortDetail'].split('- ')[1]
                 except:
                     ordinal = " _{}_".format(game['status']['type']['shortDetail'])
+                if "halftime" in ordinal.lower():
+                    ordinal = ""
                 if game['status']['type']['shortDetail'] == 'Halftime':
                     time_left = "Halftime"
                 else:
