@@ -486,11 +486,13 @@ class SportsCog(commands.Cog, name="Sports"):
                             "dddd, h:mm A zz"
                         )
                     if int(game['status']['period']) > 0:
-                        # Pre-game
-                        status += " [Warmup]"
-                        # if not append_team:
-                        #     away_team += "\n"
-                        #     home_team += "\n"
+                        print(today.diff(game_date).in_hours())
+                        if today.diff(game_date).in_hours() <= 1:
+                            # Pre-game
+                            status += " [Warmup]"
+                            # if not append_team:
+                            #     away_team += "\n"
+                            #     home_team += "\n"
                 except:
                     status = ""
                 if append_team and odds:
@@ -521,7 +523,7 @@ class SportsCog(commands.Cog, name="Sports"):
                         details += status
             else:
                 if mobile_output:
-                    mobile_output_string += "{}{} @ {}{}  |  {}\n".format(
+                    mobile_output_string += "‣ {}{} @ {}{}  |  {}\n".format(
                         away_team, a_score,
                         home_team, h_score,
                         status
@@ -549,7 +551,7 @@ class SportsCog(commands.Cog, name="Sports"):
             "thumbnail":       "https://static.www.nfl.com/image/upload/v1554321393/league/nvfr7ogywskqrfaiu38m.png",
         }
 
-        embed = self._build_embed(embed_data, mobile_output, 0x003069)
+        # embed = self._build_embed(embed_data, mobile_output, 0x003069)
 
         if timezone:
             if not self.user_db.get(member_id):
@@ -557,7 +559,81 @@ class SportsCog(commands.Cog, name="Sports"):
             self.user_db[member_id]['timezone'] = timezone
             self._save()
 
-        await ctx.send(embed=embed)
+        # this is really dumb and brute force way to split the games up over
+        # multiple embeds because discord doesn't like fields that are greater
+        # than 1024 characters in length. 
+        # TODO: clean this shit up
+        # TODO: refactor _build_embed to be smarter
+        LOGGER.warn(len(embed_data['mobile']))
+        multi = False # flag for later on, output multiple embeds
+        if mobile_output: 
+            # this is the real snag, since i only use one field for mobile
+            # output, it gets large when many games are scheduled
+            max_length = 1024
+            if len(embed_data['mobile']) > 1024:
+                # we only need to do this if we're over the limit
+                cur_length = 0
+                lines = embed_data['mobile'].split("\n")
+                tmp = ""
+                for idx,line in enumerate(lines):
+                    # go over the list and only add back each line until we're
+                    # at or close to the limit
+                    cur_length += len(line)
+                    if cur_length <= max_length:
+                        # add the line since we're still under 1024
+                        tmp += line + "\n"
+                    else:
+                        # we're over, break the loop to perserve idx
+                        break
+                # idx allows us to add the rest of the games where we left off
+                # for the 2nd embed
+                rest = "\n".join(lines[idx:])
+                # LOGGER.warn(rest)
+                multi = True # set our multiple embed flag to true
+                embed_data = {
+                    "league":          "NFL",
+                    "games_date":      games_date,
+                    "number_of_games": number_of_games,
+                    "mobile":          tmp,
+                    "away":            away,
+                    "home":            home,
+                    "status":          details,
+                    "copyright":       "",
+                    "icon":            "https://static.www.nfl.com/image/upload/v1554321393/league/nvfr7ogywskqrfaiu38m.png",
+                    "thumbnail":       "https://static.www.nfl.com/image/upload/v1554321393/league/nvfr7ogywskqrfaiu38m.png",
+                }
+                # create the first embed, this is where refactoring the build
+                # embed code would come in handy
+                embed1 = self._build_embed(embed_data, mobile_output, 0x003069)
+                embed_data = {
+                    "league":          "NFL",
+                    "title":           "",
+                    "description":     "",
+                    "multi":           True,
+                    "games_date":      games_date,
+                    "number_of_games": number_of_games,
+                    "mobile":          rest,
+                    "away":            away,
+                    "home":            home,
+                    "status":          details,
+                    "copyright":       "",
+                    "icon":            "https://img.cottongin.xyz/i/4tk9zpfl.png",
+                    "thumbnail":       "https://img.cottongin.xyz/i/4tk9zpfl.png",
+                }
+                # create number two
+                embed2 = self._build_embed(embed_data, mobile_output, 0x003069)
+            else:
+                embed = self._build_embed(embed_data, mobile_output, 0x003069)
+        else:
+            embed = self._build_embed(embed_data, mobile_output, 0x003069)
+
+        if multi:
+            await ctx.send(embed=embed1)
+            await ctx.send(embed=embed2)
+        else:
+            await ctx.send(embed=embed)
+        
+        # await ctx.send(embed=embed)
 
 
     @commands.command(name='nhl', aliases=['nhlscores', 'hockey'])
