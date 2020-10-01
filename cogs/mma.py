@@ -361,16 +361,17 @@ class MMACog(commands.Cog, name="MMA"):
                             sched_event['venue']['address']['country'],
                         )
                 schd.append(
-                    "**{}** - {}{}".format(
+                    "‣ **{}** - {}{}".format(
                         sched_event['name'],
                         pendulum.parse(sched_event['date']).in_tz(zone).format('MMM Do h:mm A zz'),
                         "{}".format(venue)
                     )
                 )
-            reply = "```\n"
+            # reply = "```\n"
+            reply = ""
             for line in schd:
                 reply += f"{line}\n"
-            reply += "```"
+            # reply += "```"
             await ctx.send(reply)
             return
 
@@ -417,7 +418,7 @@ class MMACog(commands.Cog, name="MMA"):
             right_strings = []
             decisions = []
             divisions = []
-            strings.append(f"**{event_name}** - {event_time.format('MMM Do h:mm A zz')}{event_loc}")
+            strings.append(f"{event_name} - {event_time.format('MMM Do h:mm A zz')}{event_loc}")
 
             if data.get('cards'):
                 if pv_fight or data['cards'][card_type]['competitions'][0]['status']['type']['completed']:
