@@ -1052,7 +1052,10 @@ class SportsCog(commands.Cog, name="Sports"):
                         status = pendulum.parse(game['gameDate']).in_tz(timezone or user_timezone or self.default_tz).format(
                             "h:mm A zz"
                         )
-                        if "AM" in status:
+                        tbd_check = pendulum.parse(game['gameDate']).in_tz("US/Eastern").format(
+                            "h:mm A zz"
+                        )
+                        if "AM" in tbd_check:
                             status = "Time TBD"
                     except:
                         status = ""
