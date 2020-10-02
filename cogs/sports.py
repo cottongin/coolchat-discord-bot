@@ -4,6 +4,7 @@ from discord.utils import get
 
 import requests
 import pendulum
+import aiohttp
 
 import logging
 import coloredlogs
@@ -168,6 +169,11 @@ class SportsCog(commands.Cog, name="Sports"):
             "WAS": "Washington",
             "WSH": "Washington",
         }
+    
+    async def fetch_json(self, url: str):
+        async with aiohttp.ClientSession() as cs:
+            async with cs.get(url) as r:
+                return await r.json()
 
     @commands.command(name='sports', pass_context=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
@@ -656,11 +662,6 @@ class SportsCog(commands.Cog, name="Sports"):
              nhl --tz US/Pacific
              nhl --tz pdt bos
         """
-
-        async def fetch_json(self, url: str):
-            async with aiohttp.ClientSession() as cs:
-                async with cs.get(url) as r:
-                    return await r.json()
 
         mobile_output = False
         member = ctx.author

@@ -69,6 +69,12 @@ class MMACog(commands.Cog, name="MMA"):
     def __init__(self, bot):
         self.bot = bot
         self.__name__ = __name__
+    
+    @staticmethod
+    async def fetch_json(url: str):
+        async with aiohttp.ClientSession() as cs:
+            async with cs.get(url) as r:
+                return await r.json()
 
     # @commands.command(name="fighter")
     # # @commands.example(".fighter overeem")
@@ -278,18 +284,12 @@ class MMACog(commands.Cog, name="MMA"):
         Use --date YYYYMMDD                 to fetch events on a specific date.
         """
 
-        @staticmethod
-        async def fetch_json(url: str):
-            async with aiohttp.ClientSession() as cs:
-                async with cs.get(url) as r:
-                    return await r.json()
-
         options = self.parseargs(optional_input)
         # print(options)
         # print(trigger.group(1))#, optional_input)
         try:
             # schedule = requests.get(schedule_url + "&league=ufc" if 'ufc' in ctx.invoked_with.lower() else schedule_url)
-            schedule = await fetch_json(schedule_url + "&league=ufc" if 'ufc' in ctx.invoked_with.lower() else schedule_url)
+            schedule = await self.fetch_json(schedule_url + "&league=ufc" if 'ufc' in ctx.invoked_with.lower() else schedule_url)
             # print(schedule.url)
             # schedule = schedule.json()
         except:
