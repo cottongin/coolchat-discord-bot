@@ -3,6 +3,7 @@ from urllib.parse import quote_plus
 import logging
 import shlex
 import coloredlogs
+import aiohttp
 
 import discord
 from discord.ext import commands
@@ -49,6 +50,7 @@ fighter_stats_url = (
 
 try:
     countries = requests.get("https://raw.githubusercontent.com/lukes/ISO-3166-Countries-with-Regional-Codes/master/slim-2/slim-2.json").json()
+    
 except:
     countries = []
 
@@ -67,6 +69,12 @@ class MMACog(commands.Cog, name="MMA"):
     def __init__(self, bot):
         self.bot = bot
         self.__name__ = __name__
+    
+    @staticmethod
+    async def fetch_json(url: str):
+        async with aiohttp.ClientSession() as cs:
+            async with cs.get(url) as r:
+                return await r.json()
 
     # @commands.command(name="fighter")
     # # @commands.example(".fighter overeem")
@@ -275,13 +283,15 @@ class MMACog(commands.Cog, name="MMA"):
         Use --schedule/sched                to fetch the next 5 events.
         Use --date YYYYMMDD                 to fetch events on a specific date.
         """
+
         options = self.parseargs(optional_input)
         # print(options)
         # print(trigger.group(1))#, optional_input)
         try:
-            schedule = requests.get(schedule_url + "&league=ufc" if 'ufc' in ctx.invoked_with.lower() else schedule_url)
-            print(schedule.url)
-            schedule = schedule.json()
+            # schedule = requests.get(schedule_url + "&league=ufc" if 'ufc' in ctx.invoked_with.lower() else schedule_url)
+            schedule = await self.fetch_json(schedule_url + "&league=ufc" if 'ufc' in ctx.invoked_with.lower() else schedule_url)
+            # print(schedule.url)
+            # schedule = schedule.json()
         except:
             await ctx.send("```\nI couldn't fetch the schedule\n```")
             return
