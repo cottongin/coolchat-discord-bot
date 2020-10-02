@@ -657,6 +657,11 @@ class SportsCog(commands.Cog, name="Sports"):
              nhl --tz pdt bos
         """
 
+        async def fetch_json(self, url: str):
+            async with aiohttp.ClientSession() as cs:
+                async with cs.get(url) as r:
+                    return await r.json()
+
         mobile_output = False
         member = ctx.author
         member_id = str(member.id)
@@ -716,7 +721,8 @@ class SportsCog(commands.Cog, name="Sports"):
         url = self.NHL_SCOREBOARD_ENDPOINT.format(date, date) + str(append_team)
         LOGGER.debug("NHL API called for: {}".format(url))
 
-        data = requests.get(url).json()
+        # data = requests.get(url).json()
+        data = await self.fetch_json(url)
         games = data.get('dates', {})
         if not games:
             LOGGER.warn("Something went wrong possibly. (NHL)")
@@ -959,7 +965,8 @@ class SportsCog(commands.Cog, name="Sports"):
         url = self.MLB_SCOREBOARD_ENDPOINT.format(date) + str(append_team)
         LOGGER.debug("MLB API called for: {}".format(url))
 
-        data = requests.get(url).json()
+        # data = requests.get(url).json()
+        data = await self.fetch_json(url)
         games = data.get('dates', {})
         if not games:
             LOGGER.warn("Something went wrong possibly. (MLB: fetching games)")
@@ -1356,7 +1363,8 @@ class SportsCog(commands.Cog, name="Sports"):
         url = self.NBA_SCOREBOARD_ENDPOINT.format(date) #+ str(append_team)
         LOGGER.debug("NBA API called for: {}".format(url))
 
-        data = requests.get(url).json()
+        # data = requests.get(url).json()
+        data = await self.fetch_json(url)
         games = data.get('games', {})
         if not games:
             LOGGER.warn("Something went wrong possibly. (NBA: fetching games)")
