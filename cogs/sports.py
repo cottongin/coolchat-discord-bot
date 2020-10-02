@@ -170,7 +170,8 @@ class SportsCog(commands.Cog, name="Sports"):
             "WSH": "Washington",
         }
     
-    async def fetch_json(self, url: str):
+    @staticmethod
+    async def fetch_json(url: str):
         async with aiohttp.ClientSession() as cs:
             async with cs.get(url) as r:
                 return await r.json()
@@ -196,9 +197,10 @@ class SportsCog(commands.Cog, name="Sports"):
             if check < now < check.add(days=7):
                 current_week = self.NFL_WEEKS[week]
                 break
-        data = requests.get(self.NFL_SCOREBOARD_ENDPOINT.format(**current_week))
-        print(data.url)
-        # data = data.json()
+
+        #data = requests.get(self.NFL_SCOREBOARD_ENDPOINT.format(**current_week))
+        url = self.NFL_SCOREBOARD_ENDPOINT.format(**current_week)
+        data = await self.fetch_json(url)
 
         mobile_output = False
         member = ctx.author
@@ -256,13 +258,11 @@ class SportsCog(commands.Cog, name="Sports"):
                     user_timezone or \
                     self.default_other_tz).format("YYYY-MM-DD")
         
-        # url = self.NHL_SCOREBOARD_ENDPOINT.format(date, date) + str(append_team)
-        LOGGER.debug("NFL API called for: {}".format(data.url))
+        LOGGER.debug("NFL API called for: {}".format(url))
 
         if append_team:
             LOGGER.debug(append_team)
 
-        data = data.json()
         games = data.get('events', {})
         if not games:
             LOGGER.warn("Something went wrong possibly. (NFL)")
