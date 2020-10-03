@@ -1509,6 +1509,10 @@ class SportsCog(commands.Cog, name="Sports"):
             ))
             return
 
+        content = ""
+        if games[0].get("playoffs"):
+            content = "\n{}".format(games[0]["playoffs"]["seriesSummaryText"])
+
         embed_data = {
             "league":          "NBA",
             "games_date":      games_date,
@@ -1517,6 +1521,7 @@ class SportsCog(commands.Cog, name="Sports"):
             "away":            away,
             "home":            home,
             "status":          details,
+            "content":         content,
             "copyright":       "",
             "icon":            "https://cdn.freebiesupply.com/images/large/2x/nba-logo-transparent.png",
             "thumbnail":       "https://cdn.freebiesupply.com/images/large/2x/nba-logo-transparent.png",
@@ -1588,11 +1593,12 @@ class SportsCog(commands.Cog, name="Sports"):
             embed = discord.Embed(title='{league} Scores for {date}'.format(
                                         league=data['league'], 
                                         date=data['games_date']),
-                                description='{num}{type}game{s} {are_or_is} scheduled'.format(
+                                description='{num}{type}game{s} {are_or_is} scheduled{content}'.format(
                                     num=data['number_of_games'],
                                     type=" ",
                                     s="s" if data['number_of_games'] > 1 else "",
-                                    are_or_is="are" if data['number_of_games'] > 1 else "is"),
+                                    are_or_is="are" if data['number_of_games'] > 1 else "is",
+                                    content=data.get('content', '')),
                                 colour=color)
             if mobile:
                 embed.add_field(name='Games', value=data['mobile'], inline=True)
