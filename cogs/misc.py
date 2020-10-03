@@ -32,12 +32,19 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
     
     @commands.command(name='albert')
     async def fetch_latest_albert(self, ctx, *, optional_input: str=None):
-        """Retrieves latest Albert post from LiveJournal"""
+        """Retrieves latest Albert post from LiveJournal
+        
+        Add 'random' if you'd like to fetch a random post.
+        """
         url = "https://albert71292.livejournal.com/data/rss"
         if not optional_input:
             post_index = 0
+            rand_post = False
         else:
-            post_index = int(optional_input)
+            if "random" in optional_input.lower():
+                rand_post = True
+            else:
+                post_index = int(optional_input)
         post_full_image = None
         raw_feed = feedparser.parse(url)
         async with aiohttp.ClientSession() as session:
@@ -49,7 +56,10 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
             post_image = raw_html.find('div', class_='entry-userpic').find('img').get('src')
         except:
             post_image = raw_feed.feed.image.href
-        latest = raw_feed.entries[post_index]
+        if rand_post:
+            latest = random.choice(raw_feed.entries)
+        else:
+            latest = raw_feed.entries[post_index]
         post = latest.description.replace("<br />", "\n").replace("<p />", "\n")
         clean_post = BeautifulSoup(post, "lxml").text
         # if not clean_post:
