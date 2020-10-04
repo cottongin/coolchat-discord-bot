@@ -189,7 +189,7 @@ class SportsCog(commands.Cog, name="Sports"):
 
     @commands.command(name='nfl', aliases=['nflscores', 'football'])
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def do_nfl_scores(self, ctx, *, optional_input: str=None):
+    async def do_nfl_scores(self, ctx, *, optional_input: str = None):
         """Fetches NFL scores from NFL.com"""
         now = pendulum.now()
         for week in self.NFL_WEEKS:
@@ -198,7 +198,7 @@ class SportsCog(commands.Cog, name="Sports"):
                 current_week = self.NFL_WEEKS[week]
                 break
 
-        #data = requests.get(self.NFL_SCOREBOARD_ENDPOINT.format(**current_week))
+        # data = requests.get(self.NFL_SCOREBOARD_ENDPOINT.format(**current_week))
         url = self.NFL_SCOREBOARD_ENDPOINT.format(**current_week)
         data = await self.fetch_json(url)
 
@@ -283,13 +283,13 @@ class SportsCog(commands.Cog, name="Sports"):
         #         ))
         #         return
 
-        sortorder={"2":  0,
-                   "7":  1,
-                   "22": 2,
-                   "23": 3,
-                   "1":  4,
-                   "3":  5,
-                   "6":  6}
+        sortorder = {"2":  0,
+                     "7":  1,
+                     "22": 2,
+                     "23": 3,
+                     "1":  4,
+                     "3":  5,
+                     "6":  6}
         games.sort(key=lambda x: sortorder.get(x["status"]["type"]["id"], 0))
 
         # games_date = pendulum.parse(games[0]['date']).in_tz(
@@ -354,7 +354,7 @@ class SportsCog(commands.Cog, name="Sports"):
                     if situation.get('possession'):
                         for idx, team in enumerate(score_bug):
                             if situation['possession'] == team['id']:
-                                if idx == 0:
+                                if idx == 1:
                                     away_team += ":football:"
                                 else:
                                     home_team += ":football:"
