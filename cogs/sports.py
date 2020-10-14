@@ -1055,8 +1055,17 @@ class SportsCog(commands.Cog, name="Sports"):
         ppd_home = ""
         ppd_details = ""
         ppd_games_mobile = ""
+        content = ""
 
         for game in games:
+            if not content:
+                content = "\n{}".format(
+                    game.get('seriesStatus', {}).get('result')
+                )
+            else:
+                content += " | {}".format(
+                    game.get('seriesStatus', {}).get('result')
+                )
             postponed = False
             if mobile_output:
                 away_team = game['teams']['away']['team']['abbreviation']
@@ -1228,6 +1237,7 @@ class SportsCog(commands.Cog, name="Sports"):
             "away":            away,
             "home":            home,
             "status":          details,
+            "content":         content,
             "copyright":       data['copyright'],
             "icon":            "https://img.cottongin.xyz/i/4tk9zpfl.png",
             "thumbnail":       "https://img.cottongin.xyz/i/4tk9zpfl.png",
