@@ -341,21 +341,16 @@ class SportsCog(commands.Cog, name="Sports"):
 
             if game['status']['type']['state'] == 'in':
                 score_bug = game['competitions'][0]['competitors']
-                try:
-                    situation = game_details['situation']
-                except Exception:
-                    situation = None
-                if situation:
-                    if situation.get('possession'):
-                        for idx, team in enumerate(score_bug):
-                            if situation['possession'] == team['id']:
-                                if idx == 1:
-                                    away_team += ":football:"
-                                else:
-                                    home_team += ":football:"
+                situation = game_details.get('situation', {})
+                if situation.get('possession'):
+                    for team in score_bug:
+                        if situation['possession'] == team['id']:
+                            if team['homeAway'] == "away":
+                                away_team += ":football:"
+                            else:
+                                home_team += ":football:"
                 a_score = int(score_bug[1]['score'])
                 h_score = int(score_bug[0]['score'])
-                # TODO: redzone
                 if a_score > h_score:
                     a_score = "**{}**".format(a_score)
                     away_team = "**{}**".format(away_team)
@@ -394,6 +389,10 @@ class SportsCog(commands.Cog, name="Sports"):
                     status = "[{}]".format(time)
                     a_score = " {}".format(a_score)
                     h_score = " {}".format(h_score)
+
+                # REDZONE
+                if situation.get("isRedZone"):
+                    status += " 🔴"
             elif game['status']['type']['completed']:
                 score_bug = game['competitions'][0]['competitors']
                 a_score = int(score_bug[1]['score'])
