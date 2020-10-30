@@ -41,7 +41,8 @@ initial_extensions = ['cogs.owner',
                       'cogs.sports',
                       'cogs.mma',
                       'cogs.misc',
-                      'cogs.mock']
+                      'cogs.mock',
+                      'cogs.weather']
 
 bot = commands.Bot(command_prefix=get_prefix, description='A Cool Chat Bot')
 

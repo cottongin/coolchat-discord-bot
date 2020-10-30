@@ -6,3 +6,4 @@ coolchat-bot-env/
 data/
 wip-*
 *.log
+*.http
