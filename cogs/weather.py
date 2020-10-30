@@ -202,10 +202,10 @@ class WeatherCog(commands.Cog, name="Weather"):
 
         # await ctx.send(content=f"**{raw_feed.feed.title}**", embed=embed)
 
-        if user_location:
+        if optional_input:
             if not self.user_db.get(member_id):
                 self.user_db[member_id] = {}
-            self.user_db[member_id]['location'] = user_location
+            self.user_db[member_id]['location'] = optional_input
             self._save()
 
     def _strikethrough(self, text):
