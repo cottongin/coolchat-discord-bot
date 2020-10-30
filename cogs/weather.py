@@ -118,7 +118,7 @@ class WeatherCog(commands.Cog, name="Weather"):
         purple_api_url = (
             "https://www.purpleair.com/data.json?opt=1/m/i/mAQI/a0/cC0"
             "&fetch=true&nwlat={nwlat}&selat={selat}&nwlng={nwlng}"
-            "&selng={selng}&fields=pm_0,"
+            "&selng={selng}&fields=pm_0"
         ).format(nwlat=nwlat, selat=selat, nwlng=nwlng, selng=selng)
 
         # LOGGER.info(purple_api_url)
