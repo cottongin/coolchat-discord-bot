@@ -41,7 +41,7 @@ class WeatherCog(commands.Cog, name="Weather"):
             pass
 
         try:
-            _ = self.db.get('user_db')
+            _ = self.db.get('sports_db')
             self.user_db = pickle.loads(_)
         except Exception as e:
             LOGGER.debug(e)
@@ -50,7 +50,7 @@ class WeatherCog(commands.Cog, name="Weather"):
     @classmethod
     def _save(self):
         _ = pickle.dumps(self.user_db)
-        self.db.set('user_db', _)
+        self.db.set('sports_db', _)
 
     @staticmethod
     async def fetch_json(url: str, headers=None):
