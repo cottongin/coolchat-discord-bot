@@ -462,8 +462,9 @@ class SportsCog(commands.Cog, name="Sports"):
                 except Exception:
                     status = ""
                 if append_team and odds:
-                    status += f"\n(Odds: {odds['details']}, \
-                                       ⇕ {odds['overUnder']})"
+                    LOGGER.debug(odds)
+                    status += f"\n(Odds: {odds.get('details', '')}, \
+                                       ⇕ {odds.get('overUnder', '')})"
                 a_score = ""
                 h_score = ""
 
