@@ -44,7 +44,7 @@ initial_extensions = ['cogs.owner',
                       'cogs.mock',
                       'cogs.weather']
 
-bot = commands.Bot(command_prefix=get_prefix, description='A Cool Chat Bot')
+bot = commands.Bot(command_prefix=get_prefix, description='A Cool Chat Bot', case_insensitive=True)
 
 if __name__ == '__main__':
     for extension in initial_extensions:
