@@ -127,7 +127,7 @@ class SportsCog(commands.Cog, name="Sports"):
             '2020-11-11': {'week': 10, 'type': 2},
             '2020-11-18': {'week': 11, 'type': 2},
             '2020-11-25': {'week': 12, 'type': 2},
-            '2020-12-02': {'week': 13, 'type': 2},
+            '2020-12-03': {'week': 13, 'type': 2},
             '2020-12-09': {'week': 14, 'type': 2},
             '2020-12-16': {'week': 15, 'type': 2},
             '2020-12-23': {'week': 16, 'type': 2},
@@ -212,10 +212,27 @@ class SportsCog(commands.Cog, name="Sports"):
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def do_nfl_scores(self, ctx, *, optional_input: str = None):
         """Fetches NFL scores from NFL.com"""
+
+        def _next_key(d, key):
+            key_iter = iter(d)
+
+            for k in key_iter:
+                if k == key:
+                    return next(key_iter, "2020-02-10")
+
+            return "2020-02-10"
+
         now = pendulum.now()
         for week in self.NFL_WEEKS:
             check = pendulum.parse(week, strict=False)
-            if check < now < check.add(days=7):
+            next_key = _next_key(self.NFL_WEEKS, week)
+            # print(next_key)
+            next_week = pendulum.parse(next_key, strict=False)
+            # print(check, "\t",
+            #       now, "\t",
+            #       next_week, "\t",
+            #       check < now < next_week)
+            if check < now < next_week:
                 current_week = self.NFL_WEEKS[week]
                 break
 
