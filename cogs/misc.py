@@ -17,7 +17,7 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
     def __init__(self, bot):
         self.bot = bot
         self.__name__ = __name__
-    
+
 
     @commands.command(name='friday')
     async def friday(self, ctx):
@@ -28,12 +28,11 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
             return
         image_url = 'https://img.cottongin.xyz/i/friday.png'
         await ctx.send(image_url)
-    
-    
+
     @commands.command(name='albert')
-    async def fetch_latest_albert(self, ctx, *, optional_input: str=None):
+    async def fetch_latest_albert(self, ctx, *, optional_input: str = None):
         """Retrieves latest Albert post from LiveJournal
-        
+
         Add 'random' if you'd like to fetch a random post.
         """
         url = "https://albert71292.livejournal.com/data/rss"
@@ -47,39 +46,50 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
                 post_index = int(optional_input)
         post_full_image = None
         raw_feed = feedparser.parse(url)
+        print(raw_feed)
         async with aiohttp.ClientSession() as session:
             async with session.get(url.replace("/data/rss", "")) as r:
                 if r.status == 200:
                     html = await r.text()
         raw_html = BeautifulSoup(html, "lxml")
         try:
-            post_image = raw_html.find('div', class_='entry-userpic').find('img').get('src')
-        except:
+            post_image = raw_html.find(
+                'div', class_='entry-userpic').find('img').get('src')
+        except Exception:
             post_image = raw_feed.feed.image.href
         if rand_post:
             latest = random.choice(raw_feed.entries)
         else:
             latest = raw_feed.entries[post_index]
-        post = latest.description.replace("<br />", "\n").replace("<p />", "\n")
+        post = latest.description.replace(
+            "<br />", "\n").replace("<p />", "\n")
         clean_post = BeautifulSoup(post, "lxml").text
         # if not clean_post:
         post_full_image = BeautifulSoup(post, "lxml")
         post_full_image = post_full_image.find("img")
         if post_full_image:
             post_full_image = post_full_image.get("src")
-        post_extra = textwrap.wrap(clean_post, width=2048, replace_whitespace=False, drop_whitespace=False)
+        post_extra = textwrap.wrap(
+            clean_post,
+            width=2048,
+            replace_whitespace=False,
+            drop_whitespace=False)
         if not post_extra:
             post_extra = ["\u200b"]
 
-        combo = f"{latest.title} - {pendulum.parse(latest.published, strict=False).format('MMM Do, YYYY')}"
+        combo = "{} - {}".format(
+            latest.title,
+            pendulum.parse(latest.published, strict=False).format(
+                'MMM Do, YYYY')
+        )
 
         pages = len(post_extra)
         cur_page = 1
         embed = discord.Embed(
-            title = combo,
-            colour = 0x101921,
-            description = post_extra[cur_page - 1],
-            url = latest.link
+            title=combo,
+            colour=0x101921,
+            description=post_extra[cur_page - 1],
+            url=latest.link
         )
 
         if post_full_image:
@@ -90,7 +100,8 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
         embed.set_footer(text=f"Page {cur_page}/{pages}")
 
         # await ctx.send(content=f"**{raw_feed.feed.title}**", embed=embed)
-        message = await ctx.send(content=f"**{raw_feed.feed.title}**", embed=embed)
+        message = await ctx.send(
+            content=f"**{raw_feed.feed.title}**", embed=embed)
         # await ctx.send(f"Page {cur_page}/{pages}:\n{contents[cur_page-1]}")
         # getting the message object for editing and reacting
 
@@ -98,23 +109,25 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
             await message.add_reaction("◀️")
             await message.add_reaction("▶️")
 
-            def check(reaction, user):
-                return user == ctx.author and str(reaction.emoji) in ["◀️", "▶️"]
-                # This makes sure nobody except the command sender can interact with the "menu"
+            def check(r, u):
+                return u == ctx.author and str(r.emoji) in ["◀️", "▶️"]
+                # This makes sure nobody except the command sender can
+                # interact with the "menu"
 
             while True:
                 try:
-                    reaction, user = await self.bot.wait_for("reaction_add", timeout=60*5, check=check)
-                    # waiting for a reaction to be added - times out after x seconds, 60 in this
-                    # example
+                    reaction, user = await self.bot.wait_for(
+                        "reaction_add", timeout=60*5, check=check)
+                    # waiting for a reaction to be added - times out after x
+                    # seconds, 60 in this example
 
                     if str(reaction.emoji) == "▶️" and cur_page != pages:
                         cur_page += 1
                         embed = discord.Embed(
-                            title = combo,
-                            colour = 0x101921,
-                            description = post_extra[cur_page - 1],
-                            url = latest.link
+                            title=combo,
+                            colour=0x101921,
+                            description=post_extra[cur_page - 1],
+                            url=latest.link
                         )
 
                         embed.set_thumbnail(url=post_image)
@@ -129,14 +142,14 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
                     elif str(reaction.emoji) == "◀️" and cur_page > 1:
                         cur_page -= 1
                         embed = discord.Embed(
-                            title = combo,
-                            colour = 0x101921,
-                            description = post_extra[cur_page - 1],
-                            url = latest.link
+                            title=combo,
+                            colour=0x101921,
+                            description=post_extra[cur_page - 1],
+                            url=latest.link
                         )
 
                         embed.set_thumbnail(url=post_image)
-                        
+
                         if post_full_image:
                             embed.set_image(url=post_full_image)
 
@@ -146,8 +159,8 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
 
                     else:
                         await message.remove_reaction(reaction, user)
-                        # removes reactions if the user tries to go forward on the last page or
-                        # backwards on the first page
+                        # removes reactions if the user tries to go forward on
+                        # the last page or backwards on the first page
                 except asyncio.TimeoutError:
                     await message.clear_reactions()
                     # await message.delete()
