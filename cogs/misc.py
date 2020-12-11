@@ -46,7 +46,16 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
                 post_index = int(optional_input)
         post_full_image = None
         raw_feed = feedparser.parse(url)
-        print(raw_feed)
+        if not raw_feed['entries']:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url) as r:
+                    if r.status == 200:
+                        html = await r.text()
+            # print(raw_feed)
+            raw_feed = feedparser.parse(html)
+        if not raw_feed['entries']:
+            await ctx.send("I coudn't fetch or parse the RSS feed")
+            return
         async with aiohttp.ClientSession() as session:
             async with session.get(url.replace("/data/rss", "")) as r:
                 if r.status == 200:
