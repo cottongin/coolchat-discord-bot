@@ -343,11 +343,16 @@ class SportsCog(commands.Cog, name="Sports"):
             home_team = teams[0]['team']['shortDisplayName'] \
                 if not mobile_output \
                 else teams[0]['team']['abbreviation']
+            # a_team_emoji = self.bot.get_emoji()
+            for tguild in self.bot.guilds:
+                if tguild.name == "nfl":
+                    guild = tguild
+                    break
             a_team_emoji = get(
-                ctx.guild.emojis,
+                guild.emojis,
                 name="nfl_"+teams[1]['team']['abbreviation'].lower()) or ""
             h_team_emoji = get(
-                ctx.guild.emojis,
+                guild.emojis,
                 name="nfl_"+teams[0]['team']['abbreviation'].lower()) or ""
             if away_team == "Washington":
                 away_team = "Football Team"
