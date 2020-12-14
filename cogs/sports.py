@@ -781,10 +781,14 @@ class SportsCog(commands.Cog, name="Sports"):
             home_team = game['teams']['home']['team']['teamName'] \
                 if not mobile_output \
                 else game['teams']['home']['team']['abbreviation']
+            for tguild in self.bot.guilds:
+                if tguild.name == "nhl":
+                    guild = tguild
+                    break
             a = "nhl_" + game['teams']['away']['team']['abbreviation'].lower()
-            a_team_emoji = get(ctx.guild.emojis, name=a)
+            a_team_emoji = get(guild.emojis, name=a)
             h = "nhl_"+game['teams']['home']['team']['abbreviation'].lower()
-            h_team_emoji = get(ctx.guild.emojis, name=h)
+            h_team_emoji = get(guild.emojis, name=h)
             if a_team_emoji:
                 if "mtl" in a:
                     a_team_emoji = "💩 "
@@ -1097,8 +1101,12 @@ class SportsCog(commands.Cog, name="Sports"):
                 home_team = game['teams']['home']['team']['teamName']
             a = "mlb_"+game['teams']['away']['team']['abbreviation'].lower()
             h = "mlb_"+game['teams']['home']['team']['abbreviation'].lower()
-            a_team_emoji = get(ctx.guild.emojis, name=a)
-            h_team_emoji = get(ctx.guild.emojis, name=h)
+            for tguild in self.bot.guilds:
+                if tguild.name == "mlb":
+                    guild = tguild
+                    break
+            a_team_emoji = get(guild.emojis, name=a)
+            h_team_emoji = get(guild.emojis, name=h)
             if a_team_emoji:
                 if "nyy" in a:
                     a_team_emoji = "💩 "
@@ -1479,8 +1487,12 @@ class SportsCog(commands.Cog, name="Sports"):
                 home_team = self.NBA_TEAMS[game['hTeam']['triCode']]
             a = "nba_"+game['vTeam']['triCode'].lower()
             h = "nba_"+game['hTeam']['triCode'].lower()
-            a_team_emoji = get(ctx.guild.emojis, name=a)
-            h_team_emoji = get(ctx.guild.emojis, name=h)
+            for tguild in self.bot.guilds:
+                if tguild.name == "nba":
+                    guild = tguild
+                    break
+            a_team_emoji = get(guild.emojis, name=a)
+            h_team_emoji = get(guild.emojis, name=h)
             blank = get(ctx.guild.emojis, name="blank")
             if a_team_emoji:
                 if "lal" in a:
