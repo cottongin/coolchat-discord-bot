@@ -40,10 +40,16 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
             post_index = 0
             rand_post = False
         else:
+            rand_post = False
+            post_index = 0
             if "random" in optional_input.lower():
                 rand_post = True
             else:
-                post_index = int(optional_input)
+                try:
+                    post_index = int(optional_input) - 1
+                except Exception as err:
+                    print(err)
+                    pass
         post_full_image = None
         raw_feed = feedparser.parse(url)
         if not raw_feed['entries']:
