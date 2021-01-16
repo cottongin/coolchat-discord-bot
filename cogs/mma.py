@@ -22,7 +22,7 @@ coloredlogs.install(level='DEBUG', logger=LOGGER,
     style='{'
 )
 
-schedule_url = "https://www.espn.com/mma/schedule/_/year/2020?_xhr=pageContent"
+schedule_url = "https://www.espn.com/mma/schedule/_/year/2021?_xhr=pageContent"
 event_url = ("https://site.web.api.espn.com/apis/common/v3/sports/mma/ufc"
              "/fightcenter/{event_id}?region=us&lang=en&contentorigin=espn"
              "&showAirings=buy%2Clive%2Creplay&buyWindow=1m")
