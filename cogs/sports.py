@@ -137,6 +137,7 @@ class SportsCog(commands.Cog, name="Sports"):
             '2021-01-20': {'week':  3, 'type': 3},
             '2021-01-27': {'week':  4, 'type': 3},
             '2021-02-03': {'week':  5, 'type': 3},
+            '2021-02-10': {'week':  6, 'type': 3}
         }
 
         self.NHL_TEAMS = self._fetch_teams("NHL")
@@ -226,12 +227,12 @@ class SportsCog(commands.Cog, name="Sports"):
         for week in self.NFL_WEEKS:
             check = pendulum.parse(week, strict=False)
             next_key = _next_key(self.NFL_WEEKS, week)
-            # print(next_key)
+            print(next_key)
             next_week = pendulum.parse(next_key, strict=False)
-            # print(check, "\t",
-            #       now, "\t",
-            #       next_week, "\t",
-            #       check < now < next_week)
+            print(check, "\t",
+                  now, "\t",
+                  next_week, "\t",
+                  check < now < next_week)
             if check < now < next_week:
                 current_week = self.NFL_WEEKS[week]
                 break
