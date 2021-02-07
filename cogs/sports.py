@@ -484,7 +484,7 @@ class SportsCog(commands.Cog, name="Sports"):
                             #     home_team += "\n"
                 except Exception:
                     status = ""
-                if append_team and odds:
+                if (append_team or len(games) == 1) and odds:
                     LOGGER.debug(odds)
                     status += f"\n(Odds: {odds.get('details', '')}, \
                                        ⇕ {odds.get('overUnder', '')})"
