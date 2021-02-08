@@ -398,7 +398,7 @@ class SportsCog(commands.Cog, name="Sports"):
                 )
                 if not mobile_output:
                     status = "{} - {} [{}]".format(a_score, h_score, time)
-                    if append_team:
+                    if append_team or len(games) == 1:
                         try:
                             if situation.get('downDistanceText'):
                                 status += f" - {situation['downDistanceText']}"
