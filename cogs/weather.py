@@ -242,15 +242,23 @@ class WeatherCog(commands.Cog, name="Weather"):
         color = 0xe96e50
         title = f"**Weather for {location}**"
         tz = weather_data['timezone']
+        today = weather_data['daily'][0]
+        precip2day = ""
+        if today['pop']:
+            precip2day = "{:.0%} chance of precipitation\n".format(today['pop'])
         desc = (
-            "{} - **{}°F**\n_Feels Like_ **{}°F**\n:sunrise: `{}` :city_sunset: `{}`\n"
+            "**Currently:**\n"
+            "**{}°F** - _Feels Like_ **{}°F**\n"
+            "{}\n:sunrise: `{}` :city_sunset: `{}`\n"
             "**{}%** humidity | **{}%** ☁️ | **{:0.1f}mi** visibility\n"
             "**{}** mph winds from the **{}**\n\n"
+            "**Today:**\n"
+            "{}\nHigh: **{}°F**\nLow: **{}°F**\n{}\n"
             "**Next 3 Days:**"
         ).format(
-            weather_data['current']['weather'][0]['description'].title(),
             round(weather_data['current']['temp']),
             round(weather_data['current']['feels_like']),
+            weather_data['current']['weather'][0]['description'].title(),
             pendulum.from_timestamp(weather_data['current']['sunrise']).in_tz(tz).format("HH:mm zz"),
             pendulum.from_timestamp(weather_data['current']['sunset']).in_tz(tz).format("HH:mm zz"),
             weather_data['current']['humidity'],
@@ -258,6 +266,10 @@ class WeatherCog(commands.Cog, name="Weather"):
             round(weather_data['current']['visibility'] / 1609, 2),
             round(weather_data['current']['wind_speed']),
             await self._get_wind(weather_data['current']['wind_deg']),
+            today['weather'][0]['description'].title(),
+            round(today['temp']['max']),
+            round(today['temp']['min']),
+            precip2day,
         )
         embed = discord.Embed(
             title=title,
@@ -273,11 +285,11 @@ class WeatherCog(commands.Cog, name="Weather"):
             if day['pop']:
                 precip = "{:.0%} chance of precipitation\n".format(day['pop'])
             dayname = pendulum.from_timestamp(day['dt']).in_tz(tz).format("dddd")
-            forecast = "H: **{}°F** | L: **{}°F**\n{}{}".format(
+            forecast = "{}\nHigh: **{}°F**\nLow: **{}°F**\n{}".format(
+                day['weather'][0]['description'].title(),
                 round(day['temp']['max']),
                 round(day['temp']['min']),
                 precip,
-                day['weather'][0]['description'].title()
             )
             embed.add_field(
                 name=dayname,
@@ -293,21 +305,21 @@ class WeatherCog(commands.Cog, name="Weather"):
         """get wind direction"""
 
         if (bearing <= 22.5) or (bearing > 337.5):
-            bearing = u'north \u2193'
+            bearing = 'north ⬇️'
         elif (bearing > 22.5) and (bearing <= 67.5):
-            bearing = u'northeast \u2199'
+            bearing = 'northeast ↙️'
         elif (bearing > 67.5) and (bearing <= 112.5):
-            bearing = u'east \u2190'
+            bearing = 'east ⬅️'
         elif (bearing > 112.5) and (bearing <= 157.5):
-            bearing = u'southeast \u2196'
+            bearing = 'southeast ↖️'
         elif (bearing > 157.5) and (bearing <= 202.5):
-            bearing = u'south \u2191'
+            bearing = 'south ⬆️'
         elif (bearing > 202.5) and (bearing <= 247.5):
-            bearing = u'southwest \u2197'
+            bearing = 'southwest ↗️'
         elif (bearing > 247.5) and (bearing <= 292.5):
-            bearing = u'west \u2192'
+            bearing = 'west ➡️'
         elif (bearing > 292.5) and (bearing <= 337.5):
-            bearing = u'northwest \u2198'
+            bearing = 'northwest ↘️'
 
         return bearing
 
