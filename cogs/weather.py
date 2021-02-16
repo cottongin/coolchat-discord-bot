@@ -271,7 +271,7 @@ class WeatherCog(commands.Cog, name="Weather"):
         for day in weather_data['daily'][1:4]:
             precip = ""
             if day['pop']:
-                precip = "{:.1%} chance of precipitation\n".format(day['pop'])
+                precip = "{:.0%} chance of precipitation\n".format(day['pop'])
             dayname = pendulum.from_timestamp(day['dt']).in_tz(tz).format("dddd")
             forecast = "H: **{}°F** | L: **{}°F**\n{}{}".format(
                 round(day['temp']['max']),
