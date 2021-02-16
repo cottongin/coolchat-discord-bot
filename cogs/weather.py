@@ -1,4 +1,4 @@
-# import discord
+import discord
 from discord.ext import commands
 import os
 import logging
@@ -10,6 +10,7 @@ import coloredlogs
 import aiohttp
 import redis
 import pickle
+import pendulum
 from urllib.parse import quote_plus
 from statistics import fmean
 # from bs4 import BeautifulSoup
@@ -30,6 +31,8 @@ class WeatherCog(commands.Cog, name="Weather"):
         self.bot = bot
         self.__name__ = __name__
         self.aqi_key = os.environ.get("AQI_KEY")
+        self.google_api_key = os.environ.get("GOOGLE_API_KEY")
+        self.weather_api_key = os.environ.get("WEATHER_API_KEY")
 
         try:
             self.db = redis.from_url(
@@ -47,7 +50,7 @@ class WeatherCog(commands.Cog, name="Weather"):
             LOGGER.debug(e)
             self.user_db = {}
 
-    @classmethod
+    # @classmethod
     def _save(self):
         _ = pickle.dumps(self.user_db)
         self.db.set('sports_db', _)
@@ -207,6 +210,139 @@ class WeatherCog(commands.Cog, name="Weather"):
                 self.user_db[member_id] = {}
             self.user_db[member_id]['location'] = optional_input
             self._save()
+
+    @commands.command(name='weather', aliases=['w', 'wz'])
+    # @commands.cooldown(1, 30, commands.BucketType.user)
+    async def fetch_weather(self, ctx, *, optional_input: str = None):
+        """Retrieves Weather from OpenWeatherMap"""
+
+        member = ctx.author
+        member_id = str(member.id)
+        user_location = self.user_db.get(member_id, {}).get('location')
+
+        optional_input = optional_input or user_location
+        if not optional_input:
+            await ctx.send("I need a place to lookup!")
+            return
+
+        lat, lon, loc = await self._get_latlon(optional_input)
+        weather_data = await self._get_weather(lat, lon)
+        embed = await self._build_embed(loc, weather_data)
+
+        await ctx.send(embed=embed)
+
+        if optional_input:
+            if not self.user_db.get(member_id):
+                self.user_db[member_id] = {}
+            self.user_db[member_id]['location'] = optional_input
+            self._save()
+
+    async def _build_embed(self, location, weather_data):
+        """build embed for weather"""
+        color = 0xe96e50
+        title = f"**Weather for {location}**"
+        tz = weather_data['timezone']
+        desc = (
+            "{} - **{}°F**\n_Feels Like_ **{}°F**\n:sunrise: `{}` :city_sunset: `{}`\n"
+            "**{}%** humidity | **{}%** ☁️ | **{:0.1f}mi** visibility\n"
+            "**{}** mph winds from the **{}**\n\n"
+            "**Next 3 Days:**"
+        ).format(
+            weather_data['current']['weather'][0]['description'].title(),
+            round(weather_data['current']['temp']),
+            round(weather_data['current']['feels_like']),
+            pendulum.from_timestamp(weather_data['current']['sunrise']).in_tz(tz).format("HH:mm zz"),
+            pendulum.from_timestamp(weather_data['current']['sunset']).in_tz(tz).format("HH:mm zz"),
+            weather_data['current']['humidity'],
+            weather_data['current']['clouds'],
+            round(weather_data['current']['visibility'] / 1609, 2),
+            round(weather_data['current']['wind_speed']),
+            await self._get_wind(weather_data['current']['wind_deg']),
+        )
+        embed = discord.Embed(
+            title=title,
+            colour=color,
+            description=desc,
+        )
+
+        current_icon = weather_data['current']['weather'][0]['icon']
+        embed.set_thumbnail(url=f"http://openweathermap.org/img/wn/{current_icon}@2x.png")
+
+        for day in weather_data['daily'][1:4]:
+            precip = ""
+            if day['pop']:
+                precip = "{:.1%} chance of precipitation\n".format(day['pop'])
+            dayname = pendulum.from_timestamp(day['dt']).in_tz(tz).format("dddd")
+            forecast = "H: **{}°F** | L: **{}°F**\n{}{}".format(
+                round(day['temp']['max']),
+                round(day['temp']['min']),
+                precip,
+                day['weather'][0]['description'].title()
+            )
+            embed.add_field(
+                name=dayname,
+                value=forecast,
+                inline=True
+            )
+
+        embed.set_footer(text="Powered by OpenWeatherMap", icon_url="https://openweathermap.org/themes/openweathermap/assets/vendor/owm/img/icons/logo_32x32.png")
+
+        return embed
+
+    async def _get_wind(self, bearing):
+        """get wind direction"""
+
+        if (bearing <= 22.5) or (bearing > 337.5):
+            bearing = u'north \u2193'
+        elif (bearing > 22.5) and (bearing <= 67.5):
+            bearing = u'northeast \u2199'
+        elif (bearing > 67.5) and (bearing <= 112.5):
+            bearing = u'east \u2190'
+        elif (bearing > 112.5) and (bearing <= 157.5):
+            bearing = u'southeast \u2196'
+        elif (bearing > 157.5) and (bearing <= 202.5):
+            bearing = u'south \u2191'
+        elif (bearing > 202.5) and (bearing <= 247.5):
+            bearing = u'southwest \u2197'
+        elif (bearing > 247.5) and (bearing <= 292.5):
+            bearing = u'west \u2192'
+        elif (bearing > 292.5) and (bearing <= 337.5):
+            bearing = u'northwest \u2198'
+
+        return bearing
+
+    async def _get_weather(self, lat, lon):
+        """gets weather"""
+        api_key = self.weather_api_key
+        url = f"https://api.openweathermap.org/data/2.5/onecall?lat={lat}&lon={lon}&appid={api_key}&units=imperial"
+
+        LOGGER.debug(url)
+
+        response = await self.fetch_json(url=url)
+
+        return response
+
+    # @classmethod
+    async def _get_latlon(self, user_location):
+        """Gets latitude and longitude for a location"""
+        url = "https://maps.googleapis.com/maps/api/geocode/json?address={user_location}&key={api_key}"
+        lat = lon = loc = None
+
+        try:
+            url = url.format(user_location=user_location, api_key=self.google_api_key)
+            data = await self.fetch_json(url=url)
+            # LOGGER.debug(data.url)
+            # data = data.json()
+
+            data = data['results'][0]
+
+            loc = data['formatted_address']
+            lat = data['geometry']['location']['lat']
+            lon = data['geometry']['location']['lng']
+        except Exception as err:
+            LOGGER.debug(err)
+
+        return lat, lon, loc
 
     def _strikethrough(self, text):
         return "~~{}~~".format(text)
