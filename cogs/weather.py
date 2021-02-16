@@ -245,7 +245,13 @@ class WeatherCog(commands.Cog, name="Weather"):
         today = weather_data['daily'][0]
         precip2day = ""
         if today['pop']:
-            precip2day = "{:.0%} chance of precipitation\n".format(today['pop'])
+            amt = today.get('snow', 0) or today.get('rain', 0)
+            amt = round(amt / 25.4, 1)
+            if amt:
+                amt = ' ({:.1f}")'.format(amt)
+            else:
+                amt = ""
+            precip2day = "{:.0%} chance of precipitation{}\n".format(today['pop'], amt)
         desc = (
             "**Currently:**\n"
             "**{}°F** - _Feels Like_ **{}°F**\n"
@@ -281,11 +287,18 @@ class WeatherCog(commands.Cog, name="Weather"):
         embed.set_thumbnail(url=f"http://openweathermap.org/img/wn/{current_icon}@2x.png")
 
         for day in weather_data['daily'][1:4]:
-            precip = ""
             if day['pop']:
-                precip = "{:.0%} chance of precipitation\n".format(day['pop'])
+                amt = day.get('snow', 0) or day.get('rain', 0)
+                amt = round(amt / 25.4, 1)
+                if amt:
+                    amt = ' ({:.1f}")'.format(amt)
+                else:
+                    amt = ""
+                precip = "\n{:.0%} chance of precipitation{}\n".format(day['pop'], amt)
+            else:
+                precip = ""
             dayname = pendulum.from_timestamp(day['dt']).in_tz(tz).format("dddd")
-            forecast = "{}\nHigh: **{}°F**\nLow: **{}°F**\n{}".format(
+            forecast = "{}\nHigh: **{}°F**\nLow: **{}°F**{}".format(
                 day['weather'][0]['description'].title(),
                 round(day['temp']['max']),
                 round(day['temp']['min']),
