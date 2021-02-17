@@ -1,12 +1,6 @@
-import discord
-from discord.ext import commands
 import os
 import logging
-# import typing
-# import pendulum
-# import random
 import coloredlogs
-# import feedparser
 import aiohttp
 import redis
 import pickle
@@ -14,8 +8,9 @@ import pendulum
 import re
 from urllib.parse import quote_plus
 from statistics import fmean
-# from bs4 import BeautifulSoup
 
+import discord
+from discord.ext import commands
 
 LOGGER = logging.getLogger(__name__)
 coloredlogs.install(
@@ -233,9 +228,9 @@ class WeatherCog(commands.Cog, name="Weather"):
         await ctx.send(embed=embed)
 
         if weather_data.get('alerts'):
-            for alert in weather_data['alerts']:
-                embed = await self._build_alert_embed(alert, weather_data['timezone'])
-                await ctx.send(embed=embed)
+            embed = await self._build_alert_embed(
+                weather_data['alerts'], weather_data['timezone'])
+            await ctx.send(embed=embed)
 
         if optional_input:
             if not self.user_db.get(member_id):
@@ -243,25 +238,32 @@ class WeatherCog(commands.Cog, name="Weather"):
             self.user_db[member_id]['location'] = optional_input
             self._save()
 
-    async def _build_alert_embed(self, alert, tz):
-        color = 0xffae42
-        title = alert['event']
-        fromto = "Valid from {} to {}".format(
-            pendulum.from_timestamp(alert['start']).in_tz(tz).format("ddd MMM DD HH:mm zz"),
-            pendulum.from_timestamp(alert['end']).in_tz(tz).format("ddd MMM DD HH:mm zz")
-        )
-        # desc = "**{}**\n{}".format(fromto, alert['description']) #.replace("\n", " "))
-        desc = fromto
+    async def _build_alert_embed(self, alerts, tz):
+        """Build weather alerts embed and return"""
+
         embed = discord.Embed(
-            title="⚠️ {}".format(title),
-            color=color,
-            description=desc,
+            title="⚠️ **Weather Alerts**",
+            color=0xffae42,
         )
-        # embed.set(url="https://img.cottongin.xyz/i/wdusfu3s.png")
+
+        for alert in alerts:
+            embed.add_field(
+                name=alert['event'],
+                value="Valid from {} to {}".format(
+                    pendulum.from_timestamp(
+                        alert['start']).in_tz(tz).format(
+                            "ddd MMM DD HH:mm zz"),
+                    pendulum.from_timestamp(
+                        alert['end']).in_tz(tz).format(
+                            "ddd MMM DD HH:mm zz")
+                ),
+            )
+
         return embed
 
     async def _build_embed(self, location, weather_data):
         """build embed for weather"""
+
         LOGGER.debug(location)
         location = "{}".format(re.sub(r'\b\d{5}\b', '', location)).strip()
         if location.endswith('USA'):
