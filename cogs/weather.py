@@ -253,10 +253,11 @@ class WeatherCog(commands.Cog, name="Weather"):
         # desc = "**{}**\n{}".format(fromto, alert['description']) #.replace("\n", " "))
         desc = fromto
         embed = discord.Embed(
-            title=title,
+            title="⚠️ {}".format(title),
             color=color,
-            description=desc
+            description=desc,
         )
+        # embed.set(url="https://img.cottongin.xyz/i/wdusfu3s.png")
         return embed
 
     async def _build_embed(self, location, weather_data):
