@@ -232,11 +232,32 @@ class WeatherCog(commands.Cog, name="Weather"):
 
         await ctx.send(embed=embed)
 
+        if weather_data.get('alerts'):
+            for alert in weather_data['alerts']:
+                embed = await self._build_alert_embed(alert, weather_data['timezone'])
+                await ctx.send(embed=embed)
+
         if optional_input:
             if not self.user_db.get(member_id):
                 self.user_db[member_id] = {}
             self.user_db[member_id]['location'] = optional_input
             self._save()
+
+    async def _build_alert_embed(self, alert, tz):
+        color = 0xffae42
+        title = alert['event']
+        fromto = "Valid from {} to {}".format(
+            pendulum.from_timestamp(alert['start']).in_tz(tz).format("ddd MMM DD HH:mm zz"),
+            pendulum.from_timestamp(alert['end']).in_tz(tz).format("ddd MMM DD HH:mm zz")
+        )
+        # desc = "**{}**\n{}".format(fromto, alert['description']) #.replace("\n", " "))
+        desc = fromto
+        embed = discord.Embed(
+            title=title,
+            color=color,
+            description=desc
+        )
+        return embed
 
     async def _build_embed(self, location, weather_data):
         """build embed for weather"""
