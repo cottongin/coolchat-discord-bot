@@ -11,6 +11,7 @@ import aiohttp
 import redis
 import pickle
 import pendulum
+import re
 from urllib.parse import quote_plus
 from statistics import fmean
 # from bs4 import BeautifulSoup
@@ -239,6 +240,8 @@ class WeatherCog(commands.Cog, name="Weather"):
 
     async def _build_embed(self, location, weather_data):
         """build embed for weather"""
+        LOGGER.debug(location)
+        location = "{}".format(re.sub(r'\b\d{5}\b', '', location)).strip()
         if location.endswith('USA'):
             units_mode = 'imperial'
             location = location.replace(", USA", "")
