@@ -239,6 +239,11 @@ class WeatherCog(commands.Cog, name="Weather"):
 
     async def _build_embed(self, location, weather_data):
         """build embed for weather"""
+        if location.endswith('USA'):
+            units_mode = 'imperial'
+            location = location.replace(", USA", "")
+        else:
+            units_mode = 'metric'
         color = 0xe96e50
         title = f"**Weather for {location}**"
         tz = weather_data['timezone']
@@ -254,15 +259,15 @@ class WeatherCog(commands.Cog, name="Weather"):
             precip2day = "{:.0%} chance of precipitation{}\n".format(today['pop'], amt)
         desc = (
             "**__Currently:__**\n"
-            "**{}°F** - _Feels Like_ **{}°F**\n"
+            "{} - _Feels Like_ {}\n"
             "{}{}\n:sunrise: `{}` :city_sunset: `{}`\n"
             "**{}%** humidity | **{}%** ☁️ | **{:0.1f}mi** visibility\n"
             "**{}** mph winds from the **{}**\n\n"
             "**__Today:__**\n"
-            "{}{}\nHigh: **{}°F**\nLow: **{}°F**\n{}\n"
+            "{}{}\nHigh: {}\nLow: {}\n{}\n"
         ).format(
-            round(weather_data['current']['temp']),
-            round(weather_data['current']['feels_like']),
+            await self._units(weather_data['current']['temp'], unit=units_mode),
+            await self._units(weather_data['current']['feels_like'], unit=units_mode),
             await self._get_icon(weather_data['current']['weather'][0]['main']),
             weather_data['current']['weather'][0]['description'].title(),
             pendulum.from_timestamp(weather_data['current']['sunrise']).in_tz(tz).format("HH:mm zz"),
@@ -274,8 +279,8 @@ class WeatherCog(commands.Cog, name="Weather"):
             await self._get_wind(weather_data['current']['wind_deg']),
             await self._get_icon(today['weather'][0]['main']),
             today['weather'][0]['description'].title(),
-            round(today['temp']['max']),
-            round(today['temp']['min']),
+            await self._units(today['temp']['max'], unit=units_mode),
+            await self._units(today['temp']['min'], unit=units_mode),
             precip2day,
         )
         embed = discord.Embed(
@@ -299,11 +304,11 @@ class WeatherCog(commands.Cog, name="Weather"):
             else:
                 precip = ""
             dayname = pendulum.from_timestamp(day['dt']).in_tz(tz).format("dddd")
-            forecast = "{}{}\nHigh: **{}°F**\nLow: **{}°F**{}".format(
+            forecast = "{}{}\nHigh: {}\nLow: {}{}".format(
                 await self._get_icon(day['weather'][0]['main']),
                 day['weather'][0]['description'].title(),
-                round(day['temp']['max']),
-                round(day['temp']['min']),
+                await self._units(day['temp']['max'], unit=units_mode),
+                await self._units(day['temp']['min'], unit=units_mode),
                 precip,
             )
             embed.add_field(
@@ -315,6 +320,20 @@ class WeatherCog(commands.Cog, name="Weather"):
         embed.set_footer(text="Powered by OpenWeatherMap", icon_url="https://openweathermap.org/themes/openweathermap/assets/vendor/owm/img/icons/logo_32x32.png")
 
         return embed
+
+    async def _units(self, inp, unit='imperial', mode='temp'):
+        output = inp
+        if unit == 'imperial':
+            if mode == 'temp':
+                # (32°F − 32) × 5/9 = 0°C
+                c = round((inp - 32) * 5/9, 1)
+                output = "**{}°F**\u00A0({:.1f}°C)".format(round(inp), c)
+        elif unit == 'metric':
+            if mode == 'temp':
+                # (32°F − 32) × 5/9 = 0°C
+                c = round((inp - 32) * 5/9, 1)
+                output = "**{:.1f}°C**\u00A0({}°F)".format(c, round(inp))
+        return output
 
     async def _get_icon(self, desc):
         return {
@@ -383,7 +402,7 @@ class WeatherCog(commands.Cog, name="Weather"):
 
             data = data['results'][0]
 
-            loc = data['formatted_address'].replace(", USA", "")
+            loc = data['formatted_address']
             lat = data['geometry']['location']['lat']
             lon = data['geometry']['location']['lng']
         except Exception as err:
