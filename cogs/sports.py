@@ -893,12 +893,12 @@ class SportsCog(commands.Cog, name="Sports"):
             else:
                 away_team += "\n"
                 home_team += "\n"
-                away += away_team
-                home += home_team
+                away += away_team.replace(" ", "\u00A0")
+                home += home_team.replace(" ", "\u00A0")
                 if series_summary:
                     status += f" - {series_summary}"
-                status = f"{status}{blank}\n"
-                details += status
+                status = f"{status}\n"
+                details += status.replace(" ", "\u00A0")
 
         embed_data = {
             "league":          "NHL",
@@ -1721,8 +1721,8 @@ class SportsCog(commands.Cog, name="Sports"):
         else:
             desc = '{num}{type}game{s} {are_or_is} scheduled{content}'
             embed = discord.Embed(
-                title='{league} Scores for {date}'.format(
-                    league=data['league'], date=data['games_date']),
+                # title='{league} Scores for {date}'.format(
+                #     league=data['league'], date=data['games_date']),
                 description=desc.format(
                     num=data['number_of_games'],
                     type=" ",
@@ -1730,6 +1730,17 @@ class SportsCog(commands.Cog, name="Sports"):
                     are_or_is="are" if data['number_of_games'] > 1 else "is",
                     content=data.get('content', '')),
                 colour=color)
+            # author={
+            #         'name': '{league} Scores for {date}'.format(
+            #                     league=data['league'], date=data['games_date']),
+            #         'url': f'https://{data["league"].lower()}.com',
+            #         'icon_url': "https://cdn.discordapp.com/embed/avatars/0.png" 
+            #     },
+            embed.set_author(
+                name='{league} Scores for {date}'.format(league=data['league'], date=data['games_date']),
+                url=f"https://{data['league'].lower()}.com",
+                icon_url=data['thumbnail']
+            )
             if mobile:
                 embed.add_field(
                     name='Games',
