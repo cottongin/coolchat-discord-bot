@@ -29,6 +29,34 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
         image_url = 'https://img.cottongin.xyz/i/friday.png'
         await ctx.send(image_url)
 
+
+    
+
+    @commands.command(name='kale')
+    async def have_more_kale(self, ctx):
+        """Have more kale"""
+        embed = discord.Embed(
+            title="",
+            colour=0x101921,
+            description=":musical_note:  have more kale :musical_note:  have more kale :musical_note:  have more kale :musical_note:  have more kale :musical_note:  have more kale :musical_note:  have more kale :musical_note:  have more kale :musical_note:  have more kale :musical_note:  have more kale :musical_note:  have more kale :musical_note:  have more kale :musical_note:  have more kale :musical_note:  have more kale :musical_note:  have more kale :musical_note:  have more kale :musical_note:  have more kale :musical_note:  have more kale :musical_note:  have more kale :musical_note:  have more kale :musical_note:  have more kale :musical_note:  have more kale :musical_note:  have more kale :musical_note:  have more kale :musical_note:  have more kale :musical_note:",
+        )
+
+        spiral = "https://media1.tenor.com/images/7961e49908c113c420bb7d0d91ec2010/tenor.gif?itemid=12913953"
+        # if post_full_image:
+        # embed.set_image(url=spiral)
+
+        embed.set_thumbnail(url=spiral)
+
+        # embed.set_footer(text=f"Page {cur_page}/{pages}")
+
+        # await ctx.send(content=f"**{raw_feed.feed.title}**", embed=embed)
+        message = await ctx.send(
+            # content=f"**{raw_feed.feed.title}**",
+            embed=embed
+        )
+
+        return message
+
     @commands.command(name='albert')
     async def fetch_latest_albert(self, ctx, *, optional_input: str = None):
         """Retrieves latest Albert post from LiveJournal
