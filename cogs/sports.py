@@ -673,6 +673,11 @@ class SportsCog(commands.Cog, name="Sports"):
         mobile_output = False
         member = ctx.author
         member_id = str(member.id)
+        LOGGER.warn("\nfull status:\t{} \nmobile status:\t{} \nmobile or not?\t{}".format(
+            member.raw_status,
+            member.mobile_status,
+            member.is_on_mobile()
+        ))
         if member.is_on_mobile():
             mobile_output = True
 
@@ -775,7 +780,7 @@ class SportsCog(commands.Cog, name="Sports"):
                 # if we're a playoff game?
                 if game.get("seriesSummary"):
                     series_summary = game["seriesSummary"]["seriesStatusShort"]
-            LOGGER.debug(series_summary)
+            # LOGGER.debug(series_summary)
             away_team = game['teams']['away']['team']['teamName'] \
                 if not mobile_output \
                 else game['teams']['away']['team']['abbreviation']
@@ -946,6 +951,7 @@ class SportsCog(commands.Cog, name="Sports"):
         mobile_output = False
         member = ctx.author
         member_id = str(member.id)
+        LOGGER.debug("member status: {}".format(member.raw_status))
         if member.is_on_mobile():
             mobile_output = True
 
@@ -1102,6 +1108,7 @@ class SportsCog(commands.Cog, name="Sports"):
                 home_team = game['teams']['home']['team']['teamName']
             a = "mlb_"+game['teams']['away']['team']['abbreviation'].lower()
             h = "mlb_"+game['teams']['home']['team']['abbreviation'].lower()
+            LOGGER.debug(self.bot.guilds)
             for tguild in self.bot.guilds:
                 if tguild.name == "mlb":
                     guild = tguild
@@ -1484,8 +1491,8 @@ class SportsCog(commands.Cog, name="Sports"):
                 away_team = game['vTeam']['triCode']
                 home_team = game['hTeam']['triCode']
             else:
-                away_team = self.NBA_TEAMS[game['vTeam']['triCode']]
-                home_team = self.NBA_TEAMS[game['hTeam']['triCode']]
+                away_team = self.NBA_TEAMS.get(game['vTeam']['triCode'], "")
+                home_team = self.NBA_TEAMS.get(game['hTeam']['triCode'], "")
             a = "nba_"+game['vTeam']['triCode'].lower()
             h = "nba_"+game['hTeam']['triCode'].lower()
             for tguild in self.bot.guilds:
@@ -1755,7 +1762,7 @@ class SportsCog(commands.Cog, name="Sports"):
                     inline=True)
 
             # embed.set_footer(text=data['copyright'], icon_url=data['icon'])
-            embed.set_thumbnail(url=data['thumbnail'])
+            # embed.set_thumbnail(url=data['thumbnail'])
 
         return embed
 

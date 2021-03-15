@@ -1,4 +1,7 @@
 import discord
+intents = discord.Intents.default()
+intents.members = True
+intents.presences = True
 from discord.ext import commands
 
 import os, sys, traceback
@@ -44,7 +47,7 @@ initial_extensions = ['cogs.owner',
                       'cogs.mock',
                       'cogs.weather']
 
-bot = commands.Bot(command_prefix=get_prefix, description='A Cool Chat Bot', case_insensitive=True)
+bot = commands.Bot(command_prefix=get_prefix, description='A Cool Chat Bot', case_insensitive=True, intents=intents)
 
 if __name__ == '__main__':
     for extension in initial_extensions:
