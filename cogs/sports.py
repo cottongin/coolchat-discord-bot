@@ -381,8 +381,8 @@ class SportsCog(commands.Cog, name="Sports"):
             #     away_team = "Football Team"
             # if home_team == "Washington":
             #     home_team = "Football Team"
-            combined_names = f"{teams[1]['team']['displayName']} \
-                               {teams[0]['team']['displayName']}"
+            combined_names = f"{teams[1]['team']['abbreviation']} {teams[1]['team']['displayName']} \
+                               {teams[1]['team']['abbreviation']} {teams[0]['team']['displayName']}"
             if append_team:
                 # print(append_team, " || ", combined_names.lower())
                 if append_team.lower() not in combined_names.lower():
