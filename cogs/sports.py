@@ -108,6 +108,17 @@ class SportsCog(commands.Cog, name="Sports"):
         self.NBA_SCOREBOARD_ENDPOINT = (
             "https://data.nba.net/10s/prod/v2/{}/scoreboard.json"
         )
+        self.NCB_SCOREBOARD_ENDPOINT = (
+            "https://site.api.espn.com/apis/site/v2/sports/basketball/"
+            "mens-college-basketball/scoreboard?"
+            "lang=en"
+            "&region=us"
+            "&calendartype=blacklist"
+            "&limit=300"
+            "&showAirings=true"
+            "&dates={date}"
+            "&tz=America%2FNew_York"
+        )
         self.NFL_SCOREBOARD_ENDPOINT = (
             "https://site.api.espn.com/apis/site/v2/sports/football/nfl/"
             "scoreboard?lang=en&region=us&calendartype=blacklist&limit=100"
@@ -186,7 +197,7 @@ class SportsCog(commands.Cog, name="Sports"):
             async with cs.get(url) as r:
                 return await r.json()
 
-    @commands.command(name='sports', pass_context=True)
+    @commands.command(name='sports', aliases=["scores"], pass_context=True)
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def do_all_scores(self, ctx, *, optional_input: str = None):
         """Fetches scores from all available leagues
@@ -208,6 +219,457 @@ class SportsCog(commands.Cog, name="Sports"):
             self.bot.get_command('nfl'),
             optional_input=optional_input
         )
+        await ctx.invoke(
+            self.bot.get_command('ncb'),
+            optional_input=optional_input
+        )
+
+    @commands.command(name='ncb', aliases=['ncaab', 'collegebasketball'])
+    @commands.cooldown(1, 5, commands.BucketType.user)
+    async def do_ncb_scores(self, ctx, *, optional_input: str = None):
+        """Fetches NCAAB scores from ESPN.com"""
+
+        # def _next_key(d, key):
+        #     key_iter = iter(d)
+
+        #     for k in key_iter:
+        #         if k == key:
+        #             return next(key_iter, "2020-02-10")
+
+        #     return "2020-02-10"
+
+        # now = pendulum.now()
+        # for week in self.NFL_WEEKS:
+        #     check = pendulum.parse(week, strict=False)
+        #     next_key = _next_key(self.NFL_WEEKS, week)
+        #     print(next_key)
+        #     next_week = pendulum.parse(next_key, strict=False)
+        #     print(check, "\t",
+        #           now, "\t",
+        #           next_week, "\t",
+        #           check < now < next_week)
+        #     if check < now < next_week:
+        #         current_week = self.NFL_WEEKS[week]
+        #         break
+
+        mobile_output = False
+        member = ctx.author
+        member_id = str(member.id)
+        if member.is_on_mobile():
+            mobile_output = True
+
+        user_timezone = self.user_db.get(member_id, {}).get('timezone')
+        # LOGGER.debug((user_timezone, self.user_db))
+
+        date = pendulum.now().in_tz(self.default_now_tz).format("YYYY-MM-DD")
+        append_team = ""
+        team = ""
+        timezone = None
+        if optional_input:
+            args = optional_input.split()
+            for idx, arg in enumerate(args):
+                if arg == "--tz":
+                    # grab the user-defined timezone
+                    timezone = args[idx + 1]
+                    # see if it's a short-hand timezone first
+                    timezone = self.short_tzs.get(timezone.lower()) or timezone
+                    # now check if it's valid
+                    try:
+                        _ = pendulum.timezone(timezone)
+                    except Exception:
+                        await ctx.send(
+                            "Sorry that is an invalid timezone "
+                            "(try one from https://nodatime.org/TimeZones)"
+                        )
+                        return
+                if arg.replace("-", "").isdigit():
+                    date = arg
+                if len(arg.lower()) <= 3:
+                    append_team = self.NFL_TEAMS.get(arg.upper()) or ""
+                    team = arg.upper()
+                if not append_team:
+                    for full_name, id_ in self.NFL_TEAMS.items():
+                        if arg.lower() in full_name.lower():
+                            append_team = id_
+                            break
+                if arg.lower() == "tomorrow":
+                    date = pendulum.tomorrow().in_tz(
+                        user_timezone or
+                        self.default_other_tz).format("YYYY-MM-DD")
+                elif arg.lower() == "yesterday":
+                    date = pendulum.yesterday().in_tz(
+                        user_timezone or
+                        self.default_other_tz).format("YYYY-MM-DD")
+
+            if optional_input.lower() == "tomorrow":
+                date = pendulum.tomorrow().in_tz(
+                    user_timezone or
+                    self.default_other_tz).format("YYYY-MM-DD")
+            elif optional_input.lower() == "yesterday":
+                date = pendulum.yesterday().in_tz(
+                    user_timezone or
+                    self.default_other_tz).format("YYYY-MM-DD")
+
+        if append_team:
+            LOGGER.debug(append_team)
+
+        date = date.replace("-", "")
+
+        url = self.NCB_SCOREBOARD_ENDPOINT.format(date=date)
+        LOGGER.debug("NCB API called for: {}".format(url))
+        data = await self.fetch_json(url)
+
+        games = data.get('events', {})
+        if not games:
+            LOGGER.warn("Something went wrong possibly. (NCB)")
+            await ctx.send(
+                "I couldn't find any NCB games for {team}{date}.".format(
+                    team="{} on ".format(team) if team else "",
+                    date=date)
+            )
+            return
+
+        # sortorder = {"2":  0,
+        #              "7":  1,
+        #              "22": 2,
+        #              "23": 3,
+        #              "1":  4,
+        #              "3":  5,
+        #              "6":  6}
+        # games.sort(key=lambda x: sortorder.get(x["status"]["type"]["id"], 0))
+
+        # games_date = f"Week #{current_week['week']}"
+        number_of_games = len(games)
+
+        away = ""
+        home = ""
+        details = ""
+        mobile_output_string = ""
+        # series_summary = ""
+
+        for game in games:
+            # LOGGER.debug(series_summary)
+            game_details = game['competitions'][0]
+            odds = game_details.get('odds', {})
+            if odds:
+                odds = odds[0]
+            teams = game_details['competitors']
+            away_team = teams[1]['team']['shortDisplayName'] \
+                if not mobile_output \
+                else teams[1]['team']['abbreviation']
+            home_team = teams[0]['team']['shortDisplayName'] \
+                if not mobile_output \
+                else teams[0]['team']['abbreviation']
+            # a_team_emoji = self.bot.get_emoji()
+            for tguild in self.bot.guilds:
+                if tguild.name == "nfl":
+                    guild = tguild
+                    break
+            a_team_emoji = ""
+            h_team_emoji = ""
+            # a_team_emoji = get(
+            #     guild.emojis,
+            #     name="nfl_"+teams[1]['team']['abbreviation'].lower()) or ""
+            # h_team_emoji = get(
+            #     guild.emojis,
+            #     name="nfl_"+teams[0]['team']['abbreviation'].lower()) or ""
+            # if away_team == "Washington":
+            #     away_team = "Football Team"
+            # if home_team == "Washington":
+            #     home_team = "Football Team"
+            combined_names = f"{teams[1]['team']['displayName']} \
+                               {teams[0]['team']['displayName']}"
+
+            if game['status']['type']['state'] == 'in':
+                score_bug = game['competitions'][0]['competitors']
+                situation = game_details.get('situation', {})
+                if situation.get('possession'):
+                    for team in score_bug:
+                        if situation['possession'] == team['id']:
+                            if team['homeAway'] == "away":
+                                away_team += "🏀"
+                            else:
+                                home_team += "🏀"
+                a_score = int(score_bug[1]['score'])
+                h_score = int(score_bug[0]['score'])
+                if a_score > h_score:
+                    a_score = "**{}**".format(a_score)
+                    away_team = "**{}**".format(away_team)
+                elif h_score > a_score:
+                    h_score = "**{}**".format(h_score)
+                    home_team = "**{}**".format(home_team)
+                try:
+                    ordinal = " " + \
+                        game['status']['type']['shortDetail'].split('- ')[1]
+                except Exception:
+                    ordinal = " _{}_".format(
+                        game['status']['type']['shortDetail'])
+                if "halftime" in ordinal.lower():
+                    ordinal = ""
+                if game['status']['type']['shortDetail'] == 'Halftime':
+                    time_left = "Halftime"
+                else:
+                    time_left = game['status']['displayClock']
+                time = "__{}__{}".format(
+                    time_left,
+                    ordinal,
+                )
+                if not mobile_output:
+                    status = "{} - {} [{}]".format(a_score, h_score, time)
+                    if append_team or len(games) == 1:
+                        try:
+                            if situation.get('downDistanceText'):
+                                status += f" - {situation['downDistanceText']}"
+                            if situation.get('lastPlay'):
+                                status += f"\nPrev. Play: \
+                                    {situation['lastPlay']['text']}"
+                        except Exception as e:
+                            LOGGER.debug(e)
+                            pass
+                else:
+                    status = "[{}]".format(time)
+                    a_score = " {}".format(a_score)
+                    h_score = " {}".format(h_score)
+
+                # REDZONE
+                if situation.get("isRedZone"):
+                    status += " 🔴"
+            elif game['status']['type']['completed']:
+                score_bug = game['competitions'][0]['competitors']
+                a_score = int(score_bug[1]['score'])
+                h_score = int(score_bug[0]['score'])
+                # TODO: redzone
+                if a_score > h_score:
+                    a_score = "**{}**".format(a_score)
+                    away_team = "**{}**".format(away_team)
+                elif h_score > a_score:
+                    h_score = "**{}**".format(h_score)
+                    home_team = "**{}**".format(home_team)
+                if game['status']['period'] > 4:
+                    filler = '{}'.format(
+                        game['status']['period']-4 if
+                        game['status']['period'] > 5 else ''
+                    )
+                    time_left = f"Final/{filler}OT"
+                else:
+                    time_left = "Final"
+                time = "_{}_".format(
+                    time_left,
+                )
+                if not mobile_output:
+                    status = "{} - {} {}".format(a_score, h_score, time)
+                    # if append_team:
+                    #     try:
+                    #         status += f" - {situation['downDistanceText']}\n"
+                    #         status += f"{situation['lastPlay']['text']}"
+                    #     except:
+                    #         pass
+                else:
+                    status = "{}".format(time)
+                    a_score = " {}".format(a_score)
+                    h_score = " {}".format(h_score)
+            elif game['status']['type']['description'] == 'Postponed':
+                status = "PPD"
+                a_score = ""
+                h_score = ""
+            else:
+                try:
+                    game_date = pendulum.parse(game['date']).in_tz(
+                        timezone or user_timezone or self.default_tz)
+                    today = pendulum.now().in_tz(
+                        timezone or user_timezone or self.default_tz)
+                    tomorrow = pendulum.tomorrow().in_tz(
+                        timezone or user_timezone or self.default_tz)
+                    if game_date.is_same_day(today):
+                        status = game_date.format(
+                            "h:mm A zz"
+                        )
+                    elif game_date.is_same_day(tomorrow):
+                        status = game_date.format(
+                            "[Tomorrow], h:mm A zz"
+                        )
+                    else:
+                        status = game_date.format(
+                            "dddd, h:mm A zz"
+                        )
+                    if int(game['status']['period']) > 0:
+                        print(today.diff(game_date).in_hours())
+                        if today.diff(game_date).in_hours() <= 1:
+                            # Pre-game
+                            status += " [Warmup]"
+                            # if not append_team:
+                            #     away_team += "\n"
+                            #     home_team += "\n"
+                except Exception:
+                    status = ""
+                if (append_team or len(games) == 1) and odds:
+                    LOGGER.debug(odds)
+                    status += f"\n(Odds: {odds.get('details', '')}, \
+                                       ⇕ {odds.get('overUnder', '')})"
+                a_score = ""
+                h_score = ""
+
+            away_team = "{}{}".format(a_team_emoji, away_team)
+            home_team = "{}{}".format(h_team_emoji, home_team)
+            blank = get(ctx.guild.emojis, name="blank") or ""
+            if append_team:
+                if append_team in combined_names:
+                    number_of_games = 1
+                    if mobile_output:
+                        mobile_output_string += "{}{} @ {}{}  |  {}\n".format(
+                            away_team, a_score,
+                            home_team, h_score,
+                            status
+                        )
+                    else:
+                        away_team += "\n"
+                        home_team += "\n"
+                        away += away_team
+                        home += home_team
+                        # if series_summary:
+                        #     status += f" - {series_summary}"
+                        status = f"{status}{blank}\n"
+                        details += status
+            else:
+                if mobile_output:
+                    mobile_output_string += "‣ {}{} @ {}{}  |  {}\n".format(
+                        away_team, a_score,
+                        home_team, h_score,
+                        status
+                    )
+                else:
+                    away_team += "\n"
+                    home_team += "\n"
+                    away += away_team
+                    home += home_team
+                    # if series_summary:
+                    #     status += f" - {series_summary}"
+                    status = f"{status}{blank}\n"
+                    details += status
+
+        # print(away, home, mobile_output_string)
+        if mobile_output:
+            if not mobile_output_string:
+                await ctx.send(
+                    "I couldn't find any NFL games for {team}{date}.".format(
+                        team="{} during Week #".format(team) if team else "",
+                        date=current_week)
+                )
+                return
+        else:
+            if not away and not home:
+                await ctx.send(
+                    "I couldn't find any NFL games for {team}{date}.".format(
+                        team="{} during Week #".format(team) if team else "",
+                        date=current_week)
+                )
+                return
+
+        embed_data = {
+            "league":          "NFL",
+            "games_date":      "",
+            "number_of_games": number_of_games,
+            "mobile":          mobile_output_string,
+            "away":            away,
+            "home":            home,
+            "status":          details,
+            "copyright":       "",
+            "icon":            ("https://static.www.nfl.com/image/upload/"
+                                "v1554321393/league/nvfr7ogywskqrfaiu38m.png"),
+            "thumbnail":       ("https://static.www.nfl.com/image/upload/"
+                                "v1554321393/league/nvfr7ogywskqrfaiu38m.png"),
+        }
+
+        # embed = self._build_embed(embed_data, mobile_output, 0x003069)
+
+        if timezone:
+            if not self.user_db.get(member_id):
+                self.user_db[member_id] = {}
+            self.user_db[member_id]['timezone'] = timezone
+            self._save()
+
+        # this is really dumb and brute force way to split the games up over
+        # multiple embeds because discord doesn't like fields that are greater
+        # than 1024 characters in length.
+        # TODO: clean this shit up
+        # TODO: refactor _build_embed to be smarter
+        LOGGER.warn(len(embed_data['mobile']))
+        multi = False  # flag for later on, output multiple embeds
+        if mobile_output:
+            # this is the real snag, since i only use one field for mobile
+            # output, it gets large when many games are scheduled
+            max_length = 1024
+            if len(embed_data['mobile']) > 1024:
+                # we only need to do this if we're over the limit
+                cur_length = 0
+                lines = embed_data['mobile'].split("\n")
+                tmp = ""
+                for idx, line in enumerate(lines):
+                    # go over the list and only add back each line until we're
+                    # at or close to the limit
+                    cur_length += len(line)
+                    if cur_length <= max_length:
+                        # add the line since we're still under 1024
+                        tmp += line + "\n"
+                    else:
+                        # we're over, break the loop to perserve idx
+                        break
+                # idx allows us to add the rest of the games where we left off
+                # for the 2nd embed
+                rest = "\n".join(lines[idx:])
+                # LOGGER.warn(rest)
+                multi = True  # set our multiple embed flag to true
+                embed_data = {
+                    "league":          "NFL",
+                    "games_date":      games_date,
+                    "number_of_games": number_of_games,
+                    "mobile":          tmp,
+                    "away":            away,
+                    "home":            home,
+                    "status":          details,
+                    "copyright":       "",
+                    "icon":            ("https://static.www.nfl.com/image/"
+                                        "upload/v1554321393/league/"
+                                        "nvfr7ogywskqrfaiu38m.png"),
+                    "thumbnail":       ("https://static.www.nfl.com/image/"
+                                        "upload/v1554321393/league/"
+                                        "nvfr7ogywskqrfaiu38m.png"),
+                }
+                # create the first embed, this is where refactoring the build
+                # embed code would come in handy
+                embed1 = self._build_embed(embed_data, mobile_output, 0x003069)
+                embed_data = {
+                    "league":          "NFL",
+                    "title":           "",
+                    "description":     "",
+                    "multi":           True,
+                    "games_date":      games_date,
+                    "number_of_games": number_of_games,
+                    "mobile":          rest,
+                    "away":            away,
+                    "home":            home,
+                    "status":          details,
+                    "copyright":       "",
+                    "icon":            ("https://img.cottongin.xyz/"
+                                        "i/4tk9zpfl.png"),
+                    "thumbnail":       ("https://img.cottongin.xyz/"
+                                        "i/4tk9zpfl.png"),
+                }
+                # create number two
+                embed2 = self._build_embed(embed_data, mobile_output, 0x003069)
+            else:
+                embed = self._build_embed(embed_data, mobile_output, 0x003069)
+        else:
+            embed = self._build_embed(embed_data, mobile_output, 0x003069)
+
+        if multi:
+            await ctx.send(embed=embed1)
+            await ctx.send(embed=embed2)
+        else:
+            await ctx.send(embed=embed)
+
+        # await ctx.send(embed=embed)
+
 
     @commands.command(name='nfl', aliases=['nflscores', 'football'])
     @commands.cooldown(1, 5, commands.BucketType.user)
@@ -651,6 +1113,7 @@ class SportsCog(commands.Cog, name="Sports"):
             await ctx.send(embed=embed)
 
         # await ctx.send(embed=embed)
+
 
     @commands.command(name='nhl', aliases=['nhlscores', 'hockey'])
     @commands.cooldown(1, 5, commands.BucketType.user)
