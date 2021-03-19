@@ -262,6 +262,7 @@ class SportsCog(commands.Cog, name="Sports"):
         # LOGGER.debug((user_timezone, self.user_db))
 
         date = pendulum.now().in_tz(self.default_now_tz).format("YYYY-MM-DD")
+        date_display = pendulum.now().in_tz(self.default_now_tz).format("ddd, MMM Do")
         append_team = ""
         team = ""
         timezone = None
@@ -315,6 +316,7 @@ class SportsCog(commands.Cog, name="Sports"):
         if append_team:
             LOGGER.debug(append_team)
 
+        date_display = pendulum.parse(date, strict=False).format("ddd, MMM Do")
         date = date.replace("-", "")
 
         url = self.NCB_SCOREBOARD_ENDPOINT.format(date=date)
@@ -327,7 +329,7 @@ class SportsCog(commands.Cog, name="Sports"):
             await ctx.send(
                 "I couldn't find any NCB games for {team}{date}.".format(
                     team="{} on ".format(team) if team else "",
-                    date=date)
+                    date=date_display)
             )
             return
 
@@ -560,7 +562,7 @@ class SportsCog(commands.Cog, name="Sports"):
                 await ctx.send(
                     "I couldn't find any NCB games for {team}{date}.".format(
                         team="{} on".format(team) if team else "",
-                        date=date)
+                        date=date_display)
                 )
                 return
         else:
@@ -568,13 +570,13 @@ class SportsCog(commands.Cog, name="Sports"):
                 await ctx.send(
                     "I couldn't find any NCB games for {team}{date}.".format(
                         team="{} on".format(team) if team else "",
-                        date=date)
+                        date=date_display)
                 )
                 return
 
         embed_data = {
             "league":          "NCB",
-            "games_date":      date,
+            "games_date":      date_display,
             "number_of_games": number_of_games,
             "mobile":          mobile_output_string,
             "away":            away,
@@ -626,7 +628,7 @@ class SportsCog(commands.Cog, name="Sports"):
                 multi = True  # set our multiple embed flag to true
                 embed_data = {
                     "league":          "NCB",
-                    "games_date":      date,
+                    "games_date":      date_display,
                     "number_of_games": number_of_games,
                     "mobile":          tmp,
                     "away":            away,
@@ -638,13 +640,13 @@ class SportsCog(commands.Cog, name="Sports"):
                 }
                 # create the first embed, this is where refactoring the build
                 # embed code would come in handy
-                embed1 = self._build_embed(embed_data, mobile_output, 0x003069)
+                embed1 = self._build_embed(embed_data, mobile_output, 0x0079c2)
                 embed_data = {
                     "league":          "NCB",
                     "title":           "",
                     "description":     "",
                     "multi":           True,
-                    "games_date":      date,
+                    "games_date":      date_display,
                     "number_of_games": number_of_games,
                     "mobile":          rest,
                     "away":            away,
@@ -655,11 +657,11 @@ class SportsCog(commands.Cog, name="Sports"):
                     "thumbnail":       ("https://a.espncdn.com/combiner/i?img=/redesign/assets/img/icons/ESPN-icon-basketball.png&w=64&h=64&scale=crop&cquality=40&location=origin"),
                 }
                 # create number two
-                embed2 = self._build_embed(embed_data, mobile_output, 0x003069)
+                embed2 = self._build_embed(embed_data, mobile_output, 0x0079c2)
             else:
-                embed = self._build_embed(embed_data, mobile_output, 0x003069)
+                embed = self._build_embed(embed_data, mobile_output, 0x0079c2)
         else:
-            embed = self._build_embed(embed_data, mobile_output, 0x003069)
+            embed = self._build_embed(embed_data, mobile_output, 0x0079c2)
 
         if multi:
             await ctx.send(embed=embed1)
