@@ -284,14 +284,14 @@ class SportsCog(commands.Cog, name="Sports"):
                         return
                 if arg.replace("-", "").isdigit():
                     date = arg
-                if len(arg.lower()) <= 3:
-                    append_team = self.NFL_TEAMS.get(arg.upper()) or ""
-                    team = arg.upper()
-                if not append_team:
-                    for full_name, id_ in self.NFL_TEAMS.items():
-                        if arg.lower() in full_name.lower():
-                            append_team = id_
-                            break
+                # if len(arg.lower()) <= 3:
+                #     append_team = self.NFL_TEAMS.get(arg.upper()) or ""
+                #     team = arg.upper()
+                # if not append_team:
+                #     for full_name, id_ in self.NFL_TEAMS.items():
+                #         if arg.lower() in full_name.lower():
+                #             append_team = id_
+                #             break
                 if arg.lower() == "tomorrow":
                     date = pendulum.tomorrow().in_tz(
                         user_timezone or
@@ -300,6 +300,8 @@ class SportsCog(commands.Cog, name="Sports"):
                     date = pendulum.yesterday().in_tz(
                         user_timezone or
                         self.default_other_tz).format("YYYY-MM-DD")
+                else:
+                    append_team = arg.lower()
 
             if optional_input.lower() == "tomorrow":
                 date = pendulum.tomorrow().in_tz(
@@ -379,6 +381,11 @@ class SportsCog(commands.Cog, name="Sports"):
             #     home_team = "Football Team"
             combined_names = f"{teams[1]['team']['displayName']} \
                                {teams[0]['team']['displayName']}"
+            if append_team:
+                # print(append_team, " || ", combined_names.lower())
+                if append_team.lower() not in combined_names.lower():
+                    # print("skipping")
+                    continue
 
             if game['status']['type']['state'] == 'in':
                 score_bug = game['competitions'][0]['competitors']
@@ -513,7 +520,7 @@ class SportsCog(commands.Cog, name="Sports"):
             home_team = "{}{}".format(h_team_emoji, home_team)
             blank = get(ctx.guild.emojis, name="blank") or ""
             if append_team:
-                if append_team in combined_names:
+                if append_team in combined_names.lower():
                     number_of_games = 1
                     if mobile_output:
                         mobile_output_string += "{}{} @ {}{}  |  {}\n".format(
@@ -551,33 +558,31 @@ class SportsCog(commands.Cog, name="Sports"):
         if mobile_output:
             if not mobile_output_string:
                 await ctx.send(
-                    "I couldn't find any NFL games for {team}{date}.".format(
-                        team="{} during Week #".format(team) if team else "",
-                        date=current_week)
+                    "I couldn't find any NCB games for {team}{date}.".format(
+                        team="{} on".format(team) if team else "",
+                        date=date)
                 )
                 return
         else:
             if not away and not home:
                 await ctx.send(
-                    "I couldn't find any NFL games for {team}{date}.".format(
-                        team="{} during Week #".format(team) if team else "",
-                        date=current_week)
+                    "I couldn't find any NCB games for {team}{date}.".format(
+                        team="{} on".format(team) if team else "",
+                        date=date)
                 )
                 return
 
         embed_data = {
-            "league":          "NFL",
-            "games_date":      "",
+            "league":          "NCB",
+            "games_date":      date,
             "number_of_games": number_of_games,
             "mobile":          mobile_output_string,
             "away":            away,
             "home":            home,
             "status":          details,
             "copyright":       "",
-            "icon":            ("https://static.www.nfl.com/image/upload/"
-                                "v1554321393/league/nvfr7ogywskqrfaiu38m.png"),
-            "thumbnail":       ("https://static.www.nfl.com/image/upload/"
-                                "v1554321393/league/nvfr7ogywskqrfaiu38m.png"),
+            "icon":            ("https://a.espncdn.com/combiner/i?img=/redesign/assets/img/icons/ESPN-icon-basketball.png&w=64&h=64&scale=crop&cquality=40&location=origin"),
+            "thumbnail":       ("https://a.espncdn.com/combiner/i?img=/redesign/assets/img/icons/ESPN-icon-basketball.png&w=64&h=64&scale=crop&cquality=40&location=origin"),
         }
 
         # embed = self._build_embed(embed_data, mobile_output, 0x003069)
@@ -620,40 +625,34 @@ class SportsCog(commands.Cog, name="Sports"):
                 # LOGGER.warn(rest)
                 multi = True  # set our multiple embed flag to true
                 embed_data = {
-                    "league":          "NFL",
-                    "games_date":      games_date,
+                    "league":          "NCB",
+                    "games_date":      date,
                     "number_of_games": number_of_games,
                     "mobile":          tmp,
                     "away":            away,
                     "home":            home,
                     "status":          details,
                     "copyright":       "",
-                    "icon":            ("https://static.www.nfl.com/image/"
-                                        "upload/v1554321393/league/"
-                                        "nvfr7ogywskqrfaiu38m.png"),
-                    "thumbnail":       ("https://static.www.nfl.com/image/"
-                                        "upload/v1554321393/league/"
-                                        "nvfr7ogywskqrfaiu38m.png"),
+                    "icon":            ("https://a.espncdn.com/combiner/i?img=/redesign/assets/img/icons/ESPN-icon-basketball.png&w=64&h=64&scale=crop&cquality=40&location=origin"),
+                    "thumbnail":       ("https://a.espncdn.com/combiner/i?img=/redesign/assets/img/icons/ESPN-icon-basketball.png&w=64&h=64&scale=crop&cquality=40&location=origin"),
                 }
                 # create the first embed, this is where refactoring the build
                 # embed code would come in handy
                 embed1 = self._build_embed(embed_data, mobile_output, 0x003069)
                 embed_data = {
-                    "league":          "NFL",
+                    "league":          "NCB",
                     "title":           "",
                     "description":     "",
                     "multi":           True,
-                    "games_date":      games_date,
+                    "games_date":      date,
                     "number_of_games": number_of_games,
                     "mobile":          rest,
                     "away":            away,
                     "home":            home,
                     "status":          details,
                     "copyright":       "",
-                    "icon":            ("https://img.cottongin.xyz/"
-                                        "i/4tk9zpfl.png"),
-                    "thumbnail":       ("https://img.cottongin.xyz/"
-                                        "i/4tk9zpfl.png"),
+                    "icon":            ("https://a.espncdn.com/combiner/i?img=/redesign/assets/img/icons/ESPN-icon-basketball.png&w=64&h=64&scale=crop&cquality=40&location=origin"),
+                    "thumbnail":       ("https://a.espncdn.com/combiner/i?img=/redesign/assets/img/icons/ESPN-icon-basketball.png&w=64&h=64&scale=crop&cquality=40&location=origin"),
                 }
                 # create number two
                 embed2 = self._build_embed(embed_data, mobile_output, 0x003069)
