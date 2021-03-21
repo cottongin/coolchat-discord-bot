@@ -14,6 +14,7 @@ import os
 # import errno
 import time
 import redis
+import shlex
 import pickle
 
 
@@ -119,6 +120,11 @@ class SportsCog(commands.Cog, name="Sports"):
             "&dates={date}"
             "&tz=America%2FNew_York"
         )
+        self.NCB_OFFICIAL_ENDPOINT = (
+            "https://data.ncaa.com/casablanca/scoreboard/basketball-men/d1/"
+            "{date}"
+            "/scoreboard.json"
+        )
         self.NFL_SCOREBOARD_ENDPOINT = (
             "https://site.api.espn.com/apis/site/v2/sports/football/nfl/"
             "scoreboard?lang=en&region=us&calendartype=blacklist&limit=100"
@@ -190,6 +196,31 @@ class SportsCog(commands.Cog, name="Sports"):
             "WAS": "Washington",
             "WSH": "Washington",
         }
+
+    @classmethod
+    def _parseargs(self, passed_args):
+        if passed_args:
+            # passed_args = passed_args.replace("'", '')
+            args = shlex.split(passed_args)
+            # options = {}
+
+            options = {
+                k: True if v.startswith('-') else v
+                for k,v in zip(args, args[1:]+["--"]) if k.startswith('-')
+            }
+
+            extra = args
+            if options:
+                extra = []
+                for k,v in options.items():
+                    for arg in args:
+                        if arg != k and arg != v:
+                            extra.append(arg)
+
+            options['extra_text'] = ' '.join(extra)
+            return options
+        else:
+            return {}
 
     @staticmethod
     async def fetch_json(url: str):
@@ -267,6 +298,8 @@ class SportsCog(commands.Cog, name="Sports"):
         team = ""
         timezone = None
         if optional_input:
+            args_dev = self._parseargs(optional_input)
+            print(args_dev)
             args = optional_input.split()
             for idx, arg in enumerate(args):
                 if arg == "--tz":
@@ -317,13 +350,15 @@ class SportsCog(commands.Cog, name="Sports"):
             LOGGER.debug(append_team)
 
         date_display = pendulum.parse(date, strict=False).format("ddd, MMM Do")
+        official_date = date.replace("-", "/")
         date = date.replace("-", "")
 
         url = self.NCB_SCOREBOARD_ENDPOINT.format(date=date)
-        LOGGER.debug("NCB API called for: {}".format(url))
-        data = await self.fetch_json(url)
+        url2 = self.NCB_OFFICIAL_ENDPOINT.format(date=official_date)
+        LOGGER.debug("NCB API called for: {} \n {}".format(url, url2))
+        data = await self.fetch_json(url2)
 
-        games = data.get('events', {})
+        games = data.get('games', {})
         if not games:
             LOGGER.warn("Something went wrong possibly. (NCB)")
             await ctx.send(
@@ -333,14 +368,14 @@ class SportsCog(commands.Cog, name="Sports"):
             )
             return
 
-        # sortorder = {"2":  0,
-        #              "7":  1,
-        #              "22": 2,
-        #              "23": 3,
-        #              "1":  4,
-        #              "3":  5,
-        #              "6":  6}
-        # games.sort(key=lambda x: sortorder.get(x["status"]["type"]["id"], 0))
+        sortorder = {"live":  0,
+                     "pre":  1,
+                     "final": 2,
+                     "forfeit": 3,
+                     "1":  4,
+                     "3":  5,
+                     "6":  6}
+        games.sort(key=lambda x: sortorder.get(x["game"]["gameState"], 0))
 
         # games_date = f"Week #{current_week['week']}"
         number_of_games = len(games)
@@ -351,19 +386,26 @@ class SportsCog(commands.Cog, name="Sports"):
         mobile_output_string = ""
         # series_summary = ""
 
-        for game in games:
+        for game_ in games:
+            game = game_['game']
             # LOGGER.debug(series_summary)
-            game_details = game['competitions'][0]
-            odds = game_details.get('odds', {})
-            if odds:
-                odds = odds[0]
-            teams = game_details['competitors']
-            away_team = teams[1]['team']['shortDisplayName'] \
+            # game_details = {
+            #     game['away'],
+            #     game['home']
+            # }
+            # odds = game_details.get('odds', {})
+            # if odds:
+            #     odds = odds[0]
+            teams = [
+                game['home'],
+                game['away']
+            ]
+            away_team = teams[1]['names']['short'] \
                 if not mobile_output \
-                else teams[1]['team']['abbreviation']
-            home_team = teams[0]['team']['shortDisplayName'] \
+                else teams[1]['name']['char6']
+            home_team = teams[0]['names']['short'] \
                 if not mobile_output \
-                else teams[0]['team']['abbreviation']
+                else teams[0]['names']['char6']
             # a_team_emoji = self.bot.get_emoji()
             for tguild in self.bot.guilds:
                 if tguild.name == "nfl":
@@ -381,109 +423,149 @@ class SportsCog(commands.Cog, name="Sports"):
             #     away_team = "Football Team"
             # if home_team == "Washington":
             #     home_team = "Football Team"
-            combined_names = f"{teams[1]['team']['abbreviation']} {teams[1]['team']['displayName']} \
-                               {teams[1]['team']['abbreviation']} {teams[0]['team']['displayName']}"
+            combined_names = f"{teams[1]['names']['char6']} {teams[1]['names']['full']} \
+                               {teams[1]['names']['char6']} {teams[0]['names']['full']}"
             if append_team:
                 # print(append_team, " || ", combined_names.lower())
                 if append_team.lower() not in combined_names.lower():
                     # print("skipping")
                     continue
 
-            if game['status']['type']['state'] == 'in':
-                score_bug = game['competitions'][0]['competitors']
-                situation = game_details.get('situation', {})
-                if situation.get('possession'):
-                    for team in score_bug:
-                        if situation['possession'] == team['id']:
-                            if team['homeAway'] == "away":
-                                away_team += "🏀"
-                            else:
-                                home_team += "🏀"
-                a_score = int(score_bug[1]['score'])
-                h_score = int(score_bug[0]['score'])
+            if game['gameState'] == 'live':
+                # score_bug = game['competitions'][0]['competitors']
+                # situation = game_details.get('situation', {})
+                # if situation.get('possession'):
+                #     for team in score_bug:
+                #         if situation['possession'] == team['id']:
+                #             if team['homeAway'] == "away":
+                #                 away_team += "🏀"
+                #             else:
+                #                 home_team += "🏀"
+                a_score = int(game['away']['score'])
+                h_score = int(game['home']['score'])
                 if a_score > h_score:
                     a_score = "**{}**".format(a_score)
                     away_team = "**{}**".format(away_team)
                 elif h_score > a_score:
                     h_score = "**{}**".format(h_score)
                     home_team = "**{}**".format(home_team)
-                try:
-                    ordinal = " " + \
-                        game['status']['type']['shortDetail'].split('- ')[1]
-                except Exception:
-                    ordinal = " _{}_".format(
-                        game['status']['type']['shortDetail'])
+                # try:
+                ordinal = " " + \
+                    game['currentPeriod'] #.split('- ')[1]
+                # except Exception:
+                #     ordinal = " _{}_".format(
+                #         game['status']['type']['shortDetail'])
                 if "halftime" in ordinal.lower():
                     ordinal = ""
-                if game['status']['type']['shortDetail'] == 'Halftime':
+                if game['currentPeriod'] == 'HALFTIME':
                     time_left = "Halftime"
                 else:
-                    time_left = game['status']['displayClock']
+                    time_left = game['contestClock']
                 time = "__{}__{}".format(
                     time_left,
                     ordinal,
                 )
                 if not mobile_output:
                     status = "{} - {} [{}]".format(a_score, h_score, time)
-                    if append_team or len(games) == 1:
-                        try:
-                            if situation.get('downDistanceText'):
-                                status += f" - {situation['downDistanceText']}"
-                            if situation.get('lastPlay'):
-                                status += f"\nPrev. Play: \
-                                    {situation['lastPlay']['text']}"
-                        except Exception as e:
-                            LOGGER.debug(e)
-                            pass
+                    # if append_team or len(games) == 1:
+                    #     try:
+                    #         if situation.get('downDistanceText'):
+                    #             status += f" - {situation['downDistanceText']}"
+                    #         if situation.get('lastPlay'):
+                    #             status += f"\nPrev. Play: \
+                    #                 {situation['lastPlay']['text']}"
+                    #     except Exception as e:
+                    #         LOGGER.debug(e)
+                    #         pass
                 else:
                     status = "[{}]".format(time)
                     a_score = " {}".format(a_score)
                     h_score = " {}".format(h_score)
 
-                # REDZONE
-                if situation.get("isRedZone"):
-                    status += " 🔴"
-            elif game['status']['type']['completed']:
-                score_bug = game['competitions'][0]['competitors']
-                a_score = int(score_bug[1]['score'])
-                h_score = int(score_bug[0]['score'])
-                # TODO: redzone
+                # # REDZONE
+                # if situation.get("isRedZone"):
+                #     status += " 🔴"
+            elif game['gameState'] == "final":
+                # score_bug = game['competitions'][0]['competitors']
+                # a_score = int(score_bug[1]['score'])
+                # h_score = int(score_bug[0]['score'])
+                # # TODO: redzone
+                # if a_score > h_score:
+                #     a_score = "**{}**".format(a_score)
+                #     away_team = "**{}**".format(away_team)
+                # elif h_score > a_score:
+                #     h_score = "**{}**".format(h_score)
+                #     home_team = "**{}**".format(home_team)
+                # if game['status']['period'] > 4:
+                #     filler = '{}'.format(
+                #         game['status']['period']-4 if
+                #         game['status']['period'] > 5 else ''
+                #     )
+                #     time_left = f"Final/{filler}OT"
+                # else:
+                #     time_left = "Final"
+                # time = "_{}_".format(
+                #     time_left,
+                # )
+                # if not mobile_output:
+                #     status = "{} - {} {}".format(a_score, h_score, time)
+                #     # if append_team:
+                #     #     try:
+                #     #         status += f" - {situation['downDistanceText']}\n"
+                #     #         status += f"{situation['lastPlay']['text']}"
+                #     #     except:
+                #     #         pass
+                # else:
+                #     status = "{}".format(time)
+                #     a_score = " {}".format(a_score)
+                #     h_score = " {}".format(h_score)
+                a_score = int(game['away']['score'])
+                h_score = int(game['home']['score'])
                 if a_score > h_score:
                     a_score = "**{}**".format(a_score)
                     away_team = "**{}**".format(away_team)
                 elif h_score > a_score:
                     h_score = "**{}**".format(h_score)
                     home_team = "**{}**".format(home_team)
-                if game['status']['period'] > 4:
-                    filler = '{}'.format(
-                        game['status']['period']-4 if
-                        game['status']['period'] > 5 else ''
-                    )
-                    time_left = f"Final/{filler}OT"
+                # try:
+                ordinal = " " + \
+                    game['currentPeriod'] #.split('- ')[1]
+                # except Exception:
+                #     ordinal = " _{}_".format(
+                #         game['status']['type']['shortDetail'])
+                if "halftime" in ordinal.lower():
+                    ordinal = ""
+                if game['currentPeriod'] == 'HALFTIME':
+                    time_left = "Halftime"
                 else:
-                    time_left = "Final"
-                time = "_{}_".format(
+                    time_left = game['contestClock']
+                time = "__{}__{}".format(
                     time_left,
+                    ordinal,
                 )
                 if not mobile_output:
                     status = "{} - {} {}".format(a_score, h_score, time)
-                    # if append_team:
+                    # if append_team or len(games) == 1:
                     #     try:
-                    #         status += f" - {situation['downDistanceText']}\n"
-                    #         status += f"{situation['lastPlay']['text']}"
-                    #     except:
+                    #         if situation.get('downDistanceText'):
+                    #             status += f" - {situation['downDistanceText']}"
+                    #         if situation.get('lastPlay'):
+                    #             status += f"\nPrev. Play: \
+                    #                 {situation['lastPlay']['text']}"
+                    #     except Exception as e:
+                    #         LOGGER.debug(e)
                     #         pass
                 else:
                     status = "{}".format(time)
                     a_score = " {}".format(a_score)
                     h_score = " {}".format(h_score)
-            elif game['status']['type']['description'] == 'Postponed':
-                status = "PPD"
+            elif game['gameState'] == 'forfeit':
+                status = "Forfeit (COVID)"
                 a_score = ""
                 h_score = ""
             else:
                 try:
-                    game_date = pendulum.parse(game['date']).in_tz(
+                    game_date = pendulum.from_timestamp(int(game['startTimeEpoch']), tz="US/Eastern").in_tz(
                         timezone or user_timezone or self.default_tz)
                     today = pendulum.now().in_tz(
                         timezone or user_timezone or self.default_tz)
@@ -501,15 +583,16 @@ class SportsCog(commands.Cog, name="Sports"):
                         status = game_date.format(
                             "dddd, h:mm A zz"
                         )
-                    if int(game['status']['period']) > 0:
-                        print(today.diff(game_date).in_hours())
-                        if today.diff(game_date).in_hours() <= 1:
-                            # Pre-game
-                            status += " [Warmup]"
-                            # if not append_team:
-                            #     away_team += "\n"
-                            #     home_team += "\n"
-                except Exception:
+                    # if int(game['status']['period']) > 0:
+                    #     print(today.diff(game_date).in_hours())
+                    #     if today.diff(game_date).in_hours() <= 1:
+                    #         # Pre-game
+                    #         status += " [Warmup]"
+                    #         # if not append_team:
+                    #         #     away_team += "\n"
+                    #         #     home_team += "\n"
+                except Exception as err:
+                    LOGGER.debug(err)
                     status = ""
                 if (append_team or len(games) == 1) and odds:
                     LOGGER.debug(odds)
