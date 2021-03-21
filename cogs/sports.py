@@ -292,68 +292,93 @@ class SportsCog(commands.Cog, name="Sports"):
         user_timezone = self.user_db.get(member_id, {}).get('timezone')
         # LOGGER.debug((user_timezone, self.user_db))
 
-        date = pendulum.now().in_tz(self.default_now_tz).format("YYYY-MM-DD")
+        date = pendulum.now().in_tz(self.default_now_tz)
         date_display = pendulum.now().in_tz(self.default_now_tz).format("ddd, MMM Do")
         append_team = ""
         team = ""
         timezone = None
         if optional_input:
             args_dev = self._parseargs(optional_input)
-            print(args_dev)
-            args = optional_input.split()
-            for idx, arg in enumerate(args):
-                if arg == "--tz":
-                    # grab the user-defined timezone
-                    timezone = args[idx + 1]
-                    # see if it's a short-hand timezone first
-                    timezone = self.short_tzs.get(timezone.lower()) or timezone
-                    # now check if it's valid
-                    try:
-                        _ = pendulum.timezone(timezone)
-                    except Exception:
-                        await ctx.send(
-                            "Sorry that is an invalid timezone "
-                            "(try one from https://nodatime.org/TimeZones)"
-                        )
-                        return
-                if arg.replace("-", "").isdigit():
-                    date = arg
-                # if len(arg.lower()) <= 3:
-                #     append_team = self.NFL_TEAMS.get(arg.upper()) or ""
-                #     team = arg.upper()
-                # if not append_team:
-                #     for full_name, id_ in self.NFL_TEAMS.items():
-                #         if arg.lower() in full_name.lower():
-                #             append_team = id_
-                #             break
-                if arg.lower() == "tomorrow":
-                    date = pendulum.tomorrow().in_tz(
-                        user_timezone or
-                        self.default_other_tz).format("YYYY-MM-DD")
-                elif arg.lower() == "yesterday":
-                    date = pendulum.yesterday().in_tz(
-                        user_timezone or
-                        self.default_other_tz).format("YYYY-MM-DD")
-                else:
-                    append_team = arg.lower()
+            # print(args_dev)
+            if args_dev.get('--tz'):
+                # grab the user-defined timezone
+                timezone = args_dev.get('--tz')
+                # see if it's a short-hand timezone first
+                timezone = self.short_tzs.get(timezone.lower()) or timezone
+                # now check if it's valid
+                try:
+                    _ = pendulum.timezone(timezone)
+                except Exception:
+                    await ctx.send(
+                        "Sorry that is an invalid timezone "
+                        "(try one from https://nodatime.org/TimeZones)"
+                    )
+                    return
+            if args_dev.get('extra_text', '').replace("-", "").isdigit():
+                date = pendulum.parse(arg, strict=False).in_tz(user_timezone or self.default_other_tz)
+            if args_dev.get('extra_text').lower() == "yesterday":
+                date = pendulum.yesterday().in_tz(user_timezone or self.default_other_tz)
+            elif args_dev.get('extra_text').lower() == "tomorrow":
+                date = pendulum.tomorrow().in_tz(user_timezone or self.default_other_tz)
+            else:
+                append_team = args_dev.get('extra_text').lower()
+            
+            # args = optional_input.split()
+            # for idx, arg in enumerate(args):
+            #     if arg == "--tz":
+            #         # grab the user-defined timezone
+            #         timezone = args[idx + 1]
+            #         # see if it's a short-hand timezone first
+            #         timezone = self.short_tzs.get(timezone.lower()) or timezone
+            #         # now check if it's valid
+            #         try:
+            #             _ = pendulum.timezone(timezone)
+            #         except Exception:
+            #             await ctx.send(
+            #                 "Sorry that is an invalid timezone "
+            #                 "(try one from https://nodatime.org/TimeZones)"
+            #             )
+            #             return
+            #     if arg.replace("-", "").isdigit():
+            #         date = pendulum.parse(arg, strict=False).in_tz(
+            #             user_timezone or
+            #             self.default_other_tz)
+            #     # if len(arg.lower()) <= 3:
+            #     #     append_team = self.NFL_TEAMS.get(arg.upper()) or ""
+            #     #     team = arg.upper()
+            #     # if not append_team:
+            #     #     for full_name, id_ in self.NFL_TEAMS.items():
+            #     #         if arg.lower() in full_name.lower():
+            #     #             append_team = id_
+            #     #             break
+            #     if arg.lower() == "tomorrow":
+            #         date = pendulum.tomorrow().in_tz(
+            #             user_timezone or
+            #             self.default_other_tz)
+            #     elif arg.lower() == "yesterday":
+            #         date = pendulum.yesterday().in_tz(
+            #             user_timezone or
+            #             self.default_other_tz)
+            #     else:
+            #         append_team = arg.lower()
 
-            if optional_input.lower() == "tomorrow":
-                date = pendulum.tomorrow().in_tz(
-                    user_timezone or
-                    self.default_other_tz).format("YYYY-MM-DD")
-            elif optional_input.lower() == "yesterday":
-                date = pendulum.yesterday().in_tz(
-                    user_timezone or
-                    self.default_other_tz).format("YYYY-MM-DD")
+            # if optional_input.lower() == "tomorrow":
+            #     date = pendulum.tomorrow().in_tz(
+            #         user_timezone or
+            #         self.default_other_tz)
+            # elif optional_input.lower() == "yesterday":
+            #     date = pendulum.yesterday().in_tz(
+            #         user_timezone or
+            #         self.default_other_tz)
 
         if append_team:
             LOGGER.debug(append_team)
 
-        date_display = pendulum.parse(date, strict=False).format("ddd, MMM Do")
-        official_date = date.replace("-", "/")
-        date = date.replace("-", "")
+        date_display = date.format("ddd, MMM Do")
+        official_date = date.format("YYYY/MM/DD")
+        # date = date.format("YYYYMMDD")
 
-        url = self.NCB_SCOREBOARD_ENDPOINT.format(date=date)
+        url = self.NCB_SCOREBOARD_ENDPOINT.format(date=date.format("YYYYMMDD"))
         url2 = self.NCB_OFFICIAL_ENDPOINT.format(date=official_date)
         LOGGER.debug("NCB API called for: {} \n {}".format(url, url2))
         data = await self.fetch_json(url2)
@@ -455,9 +480,8 @@ class SportsCog(commands.Cog, name="Sports"):
                 # except Exception:
                 #     ordinal = " _{}_".format(
                 #         game['status']['type']['shortDetail'])
-                if "halftime" in ordinal.lower():
+                if game['currentPeriod'] == 'HALF':
                     ordinal = ""
-                if game['currentPeriod'] == 'HALFTIME':
                     time_left = "Halftime"
                 else:
                     time_left = game['contestClock']
@@ -528,21 +552,22 @@ class SportsCog(commands.Cog, name="Sports"):
                     h_score = "**{}**".format(h_score)
                     home_team = "**{}**".format(home_team)
                 # try:
-                ordinal = " " + \
-                    game['currentPeriod'] #.split('- ')[1]
+                # ordinal = " " + \
+                #     game['currentPeriod'] #.split('- ')[1]
                 # except Exception:
                 #     ordinal = " _{}_".format(
                 #         game['status']['type']['shortDetail'])
-                if "halftime" in ordinal.lower():
-                    ordinal = ""
-                if game['currentPeriod'] == 'HALFTIME':
-                    time_left = "Halftime"
-                else:
-                    time_left = game['contestClock']
-                time = "__{}__{}".format(
-                    time_left,
-                    ordinal,
-                )
+                # if "halftime" in ordinal.lower():
+                #     ordinal = ""
+                # if game['currentPeriod'] == 'HALFTIME':
+                #     time_left = "Halftime"
+                # else:
+                #     time_left = game['contestClock']
+                # time = "__{}__{}".format(
+                #     time_left,
+                #     ordinal,
+                # )
+                time = "_Final_" if not mobile_output else "_**F**_"
                 if not mobile_output:
                     status = "{} - {} {}".format(a_score, h_score, time)
                     # if append_team or len(games) == 1:
@@ -639,7 +664,7 @@ class SportsCog(commands.Cog, name="Sports"):
                     status = f"{status}{blank}\n"
                     details += status
 
-        # print(away, home, mobile_output_string)
+        print(away, home, mobile_output_string)
         if mobile_output:
             if not mobile_output_string:
                 await ctx.send(
