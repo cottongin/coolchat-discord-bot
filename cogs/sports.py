@@ -402,7 +402,7 @@ class SportsCog(commands.Cog, name="Sports"):
             ]
             away_team = teams[1]['names']['short'] \
                 if not mobile_output \
-                else teams[1]['name']['char6']
+                else teams[1]['names']['char6']
             home_team = teams[0]['names']['short'] \
                 if not mobile_output \
                 else teams[0]['names']['char6']
@@ -451,7 +451,7 @@ class SportsCog(commands.Cog, name="Sports"):
                     home_team = "**{}**".format(home_team)
                 # try:
                 ordinal = " " + \
-                    game['currentPeriod'] #.split('- ')[1]
+                    game['currentPeriod'].replace(" HALF", "") #.split('- ')[1]
                 # except Exception:
                 #     ordinal = " _{}_".format(
                 #         game['status']['type']['shortDetail'])
