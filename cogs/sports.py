@@ -433,17 +433,17 @@ class SportsCog(commands.Cog, name="Sports"):
                 else teams[0]['names']['char6']
             # a_team_emoji = self.bot.get_emoji()
             for tguild in self.bot.guilds:
-                if tguild.name == "nfl":
+                if tguild.name == "ncb":
                     guild = tguild
                     break
             a_team_emoji = ""
             h_team_emoji = ""
-            # a_team_emoji = get(
-            #     guild.emojis,
-            #     name="nfl_"+teams[1]['team']['abbreviation'].lower()) or ""
-            # h_team_emoji = get(
-            #     guild.emojis,
-            #     name="nfl_"+teams[0]['team']['abbreviation'].lower()) or ""
+            a_team_emoji = get(
+                guild.emojis,
+                name="{}".format(teams[1]['names']['seo']).replace('-', '').lower()) or ""
+            h_team_emoji = get(
+                guild.emojis,
+                name="{}".format(teams[0]['names']['seo']).replace('-', '').lower()) or ""
             # if away_team == "Washington":
             #     away_team = "Football Team"
             # if home_team == "Washington":
