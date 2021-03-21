@@ -444,6 +444,10 @@ class SportsCog(commands.Cog, name="Sports"):
             h_team_emoji = get(
                 guild.emojis,
                 name="{}".format(teams[0]['names']['seo']).replace('-', '').lower()) or ""
+            if a_team_emoji:
+                a_team_emoji = "{} ".format(a_team_emoji)
+            if h_team_emoji:
+                h_team_emoji = "{} ".format(h_team_emoji)
             # if away_team == "Washington":
             #     away_team = "Football Team"
             # if home_team == "Washington":
@@ -475,18 +479,23 @@ class SportsCog(commands.Cog, name="Sports"):
                     h_score = "**{}**".format(h_score)
                     home_team = "**{}**".format(home_team)
                 # try:
-                ordinal = " " + \
-                    game['currentPeriod'].replace(" HALF", "") #.split('- ')[1]
+                # ordinal = " " + \
+                #     game['currentPeriod'].replace(" HALF", "") #.split('- ')[1]
+                em = {
+                    "1ST HALF": " 🟢 1st",
+                    "2ND HALF": " 🟢 2nd",
+                }
+                ordinal = em.get(game['currentPeriod'], " " + game['currentPeriod'])
                 # except Exception:
                 #     ordinal = " _{}_".format(
                 #         game['status']['type']['shortDetail'])
                 if game['currentPeriod'] == 'HALF':
-                    ordinal = ""
-                    time_left = "Halftime"
+                    ordinal = "🟠 Half"
+                    time_left = ""
                 else:
                     time_left = game['contestClock']
-                time = "__{}__{}".format(
-                    time_left,
+                time = "{}{}".format(
+                    "__" + time_left + "__" if time_left else "",
                     ordinal,
                 )
                 if not mobile_output:
@@ -567,7 +576,8 @@ class SportsCog(commands.Cog, name="Sports"):
                 #     time_left,
                 #     ordinal,
                 # )
-                time = "_Final_" if not mobile_output else "_**F**_"
+                # time = "_Final_" if not mobile_output else "_**F**_"
+                time = "🔴 _Final_" if not mobile_output else "🔴**F**" 
                 if not mobile_output:
                     status = "{} - {} {}".format(a_score, h_score, time)
                     # if append_team or len(games) == 1:
