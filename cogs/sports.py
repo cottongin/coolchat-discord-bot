@@ -644,7 +644,7 @@ class SportsCog(commands.Cog, name="Sports"):
 
             away_team = "{}{}".format(a_team_emoji, away_team)
             home_team = "{}{}".format(h_team_emoji, home_team)
-            blank = get(ctx.guild.emojis, name="blank") or ""
+            # blank = get(ctx.guild.emojis, name="blank") or ""
             if append_team:
                 if append_team in combined_names.lower():
                     number_of_games = 1
@@ -661,7 +661,7 @@ class SportsCog(commands.Cog, name="Sports"):
                         home += home_team
                         # if series_summary:
                         #     status += f" - {series_summary}"
-                        status = f"{status}{blank}\n"
+                        status = f"{status}\n"
                         details += status
             else:
                 if mobile_output:
@@ -677,7 +677,7 @@ class SportsCog(commands.Cog, name="Sports"):
                     home += home_team
                     # if series_summary:
                     #     status += f" - {series_summary}"
-                    status = f"{status}{blank}\n"
+                    status = f"{status}\n"
                     details += status
 
         print(away, home, mobile_output_string)
@@ -1080,7 +1080,7 @@ class SportsCog(commands.Cog, name="Sports"):
 
             away_team = "{}{}".format(a_team_emoji, away_team)
             home_team = "{}{}".format(h_team_emoji, home_team)
-            blank = get(ctx.guild.emojis, name="blank") or ""
+            # blank = get(ctx.guild.emojis, name="blank") or ""
             if append_team:
                 if append_team in combined_names:
                     number_of_games = 1
@@ -1097,7 +1097,7 @@ class SportsCog(commands.Cog, name="Sports"):
                         home += home_team
                         # if series_summary:
                         #     status += f" - {series_summary}"
-                        status = f"{status}{blank}\n"
+                        status = f"{status}\n"
                         details += status
             else:
                 if mobile_output:
@@ -1113,7 +1113,7 @@ class SportsCog(commands.Cog, name="Sports"):
                     home += home_team
                     # if series_summary:
                     #     status += f" - {series_summary}"
-                    status = f"{status}{blank}\n"
+                    status = f"{status}\n"
                     details += status
 
         # print(away, home, mobile_output_string)
@@ -1476,7 +1476,7 @@ class SportsCog(commands.Cog, name="Sports"):
 
             away_team = "{}{}".format(a_team_emoji, away_team)
             home_team = "{}{}".format(h_team_emoji, home_team)
-            blank = get(ctx.guild.emojis, name="blank")
+            # blank = get(ctx.guild.emojis, name="blank")
             if mobile_output:
                 mobile_output_string += "{}{} @ {}{}  |  {}\n".format(
                     away_team, a_score,
@@ -1825,7 +1825,7 @@ class SportsCog(commands.Cog, name="Sports"):
 
             away_team = "{}{}".format(a_team_emoji, away_team)
             home_team = "{}{}".format(h_team_emoji, home_team)
-            blank = get(ctx.guild.emojis, name="blank")
+            # blank = get(ctx.guild.emojis, name="blank")
             if mobile_output:
                 if not postponed:
                     mobile_output_string += "{}{} @ {}{}  |  {}\n".format(
@@ -1845,14 +1845,14 @@ class SportsCog(commands.Cog, name="Sports"):
                     home_team += "\n"
                     away += away_team
                     home += home_team
-                    status = f"{status}{blank}\n"
+                    status = f"{status}\n"
                     details += status
                 else:
                     away_team += "\n"
                     home_team += "\n"
                     ppd_away += away_team
                     ppd_home += home_team
-                    status = f"{status}{blank}\n"
+                    status = f"{status}\n"
                     ppd_details += status
 
         embed_data = {
@@ -2089,7 +2089,7 @@ class SportsCog(commands.Cog, name="Sports"):
                     break
             a_team_emoji = get(guild.emojis, name=a)
             h_team_emoji = get(guild.emojis, name=h)
-            blank = get(ctx.guild.emojis, name="blank")
+            # blank = get(ctx.guild.emojis, name="blank")
             if a_team_emoji:
                 if "lal" in a:
                     a_team_emoji = "💩 "
@@ -2183,7 +2183,7 @@ class SportsCog(commands.Cog, name="Sports"):
                         home_team += "\n"
                         away += away_team
                         home += home_team
-                        status = f"{status}{blank}\n"
+                        status = f"{status}\n"
                         details += status
                     games_found += 1
             else:
@@ -2198,7 +2198,7 @@ class SportsCog(commands.Cog, name="Sports"):
                     home_team += "\n"
                     away += away_team
                     home += home_team
-                    status = f"{status}{blank}\n"
+                    status = f"{status}\n"
                     details += status
                 games_found += 1
 
