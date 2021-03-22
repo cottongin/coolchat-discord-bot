@@ -431,9 +431,24 @@ class SportsCog(commands.Cog, name="Sports"):
             home_team = teams[0]['names']['short'] \
                 if not mobile_output \
                 else teams[0]['names']['char6']
+            def __shorten_names(name):
+                words = name.split()
+                for idx, word in enumerate(words):
+                    cardinal = ["north", "south", "east", "west"]
+                    if word.lower() in cardinal:
+                        words[idx] = word[0].upper()
+                full = " ".join(words)
+                full = (full[:15] + '…') if len(full) > 16 else full
+                return full
+            # away_team = __shorten_names(away_team)
+            if len(away_team) >= 16:
+                away_team = teams[1]['names']['char6']
             away_team += " [{}]".format(
                 teams[1].get('seed')
             ) if teams[1].get('seed') else ""
+            # home_team = __shorten_names(home_team)
+            if len(home_team) >= 16:
+                home_team = teams[0]['names']['char6']
             home_team += " [{}]".format(
                 teams[0].get('seed')
             ) if teams[0].get('seed') else ""
