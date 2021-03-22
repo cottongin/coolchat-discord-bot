@@ -431,6 +431,12 @@ class SportsCog(commands.Cog, name="Sports"):
             home_team = teams[0]['names']['short'] \
                 if not mobile_output \
                 else teams[0]['names']['char6']
+            away_team += " **[{}]**".format(
+                teams[1].get('seed')
+            ) if teams[1].get('seed') else ""
+            home_team += " **[{}]**".format(
+                teams[0].get('seed')
+            ) if teams[0].get('seed') else ""
             # a_team_emoji = self.bot.get_emoji()
             for tguild in self.bot.guilds:
                 if tguild.name == "ncb":
