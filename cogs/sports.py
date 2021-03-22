@@ -441,14 +441,15 @@ class SportsCog(commands.Cog, name="Sports"):
                 full = (full[:15] + '…') if len(full) > 16 else full
                 return full
             # away_team = __shorten_names(away_team)
-            if len(away_team) >= 16:
+            max_name_length = 16
+            if len(away_team) > max_name_length:
                 away_team = teams[1]['names']['char6']
+            if len(home_team) > max_name_length:
+                home_team = teams[0]['names']['char6']
             away_team += " [{}]".format(
                 teams[1].get('seed')
             ) if teams[1].get('seed') else ""
             # home_team = __shorten_names(home_team)
-            if len(home_team) >= 16:
-                home_team = teams[0]['names']['char6']
             home_team += " [{}]".format(
                 teams[0].get('seed')
             ) if teams[0].get('seed') else ""
@@ -2295,20 +2296,20 @@ class SportsCog(commands.Cog, name="Sports"):
             )
             if mobile:
                 embed.add_field(
-                    name='Games',
+                    name='**```Games```**',
                     value=data['ppd_mobile'],
                     inline=True)
             else:
                 embed.add_field(
-                    name='Away',
+                    name='**```Away```**',
                     value=data['ppd'][0],
                     inline=True)
                 embed.add_field(
-                    name='Home',
+                    name='**```Home```**',
                     value=data['ppd'][1],
                     inline=True)
                 embed.add_field(
-                    name='Status',
+                    name='**```Status```**',
                     value=data['ppd'][2],
                     inline=True)
         elif data.get("multi"):
@@ -2318,14 +2319,14 @@ class SportsCog(commands.Cog, name="Sports"):
             )
             if mobile:
                 embed.add_field(
-                    name='Games (continued)',
+                    name='**```Games (continued)```**',
                     value=data['mobile'],
                     inline=True)
             else:
-                embed.add_field(name='Away', value=data['away'], inline=True)
-                embed.add_field(name='Home', value=data['home'], inline=True)
+                embed.add_field(name='**```Away```**', value=data['away'], inline=True)
+                embed.add_field(name='**```Home```**', value=data['home'], inline=True)
                 embed.add_field(
-                    name='Status',
+                    name='**```Status```**',
                     value=data['status'],
                     inline=True)
         else:
@@ -2353,17 +2354,18 @@ class SportsCog(commands.Cog, name="Sports"):
             )
             if mobile:
                 embed.add_field(
-                    name='Games',
+                    name='**```Games```**',
                     value=data['mobile'],
                     inline=True)
             else:
-                embed.add_field(name='Away', value=data['away'], inline=True)
-                embed.add_field(name='Home', value=data['home'], inline=True)
+                embed.add_field(name='**```Away```**', value=data['away'], inline=True)
+                embed.add_field(name='**```Home```**', value=data['home'], inline=True)
                 embed.add_field(
-                    name='Status',
+                    name='**```Status```**',
                     value=data['status'],
                     inline=True)
 
+            # embed.set_footer(text="\u3000"*500+"|")
             # embed.set_footer(text=data['copyright'], icon_url=data['icon'])
             # embed.set_thumbnail(url=data['thumbnail'])
 
