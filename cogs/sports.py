@@ -381,9 +381,14 @@ class SportsCog(commands.Cog, name="Sports"):
         url = self.NCB_SCOREBOARD_ENDPOINT.format(date=date.format("YYYYMMDD"))
         url2 = self.NCB_OFFICIAL_ENDPOINT.format(date=official_date)
         LOGGER.debug("NCB API called for: {} \n {}".format(url, url2))
-        data = await self.fetch_json(url2)
 
-        games = data.get('games', {})
+        try:
+            data = await self.fetch_json(url2)
+            games = data.get('games', {})
+        except aiohttp.client_exceptions.ContentTypeError as err:
+            LOGGER.error(err)
+            games = None
+
         if not games:
             LOGGER.warn("Something went wrong possibly. (NCB)")
             await ctx.send(
