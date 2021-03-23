@@ -651,10 +651,10 @@ class SportsCog(commands.Cog, name="Sports"):
                 except Exception as err:
                     LOGGER.debug(err)
                     status = ""
-                if (append_team or len(games) == 1) and odds:
-                    LOGGER.debug(odds)
-                    status += f"\n(Odds: {odds.get('details', '')}, \
-                                       ⇕ {odds.get('overUnder', '')})"
+                # if (append_team or len(games) == 1) and odds:
+                #     LOGGER.debug(odds)
+                #     status += f"\n(Odds: {odds.get('details', '')}, \
+                #                        ⇕ {odds.get('overUnder', '')})"
                 a_score = ""
                 h_score = ""
 
