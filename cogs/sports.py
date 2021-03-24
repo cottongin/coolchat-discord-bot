@@ -314,15 +314,19 @@ class SportsCog(commands.Cog, name="Sports"):
                         "(try one from https://nodatime.org/TimeZones)"
                     )
                     return
-            if args_dev.get('extra_text', '').replace("-", "").isdigit():
-                date = pendulum.parse(arg, strict=False).in_tz(user_timezone or self.default_other_tz)
-            if args_dev.get('extra_text').lower() == "yesterday":
+            if args_dev.get('extra_text', '').lower() == "yesterday":
                 date = pendulum.yesterday().in_tz(user_timezone or self.default_other_tz)
-            elif args_dev.get('extra_text').lower() == "tomorrow":
+            elif args_dev.get('extra_text', '').lower() == "tomorrow":
                 date = pendulum.tomorrow().in_tz(user_timezone or self.default_other_tz)
             else:
-                append_team = args_dev.get('extra_text').lower()
-            
+                try:
+                    date = pendulum.parse(
+                        args_dev.get('extra_text'), 
+                        strict=False
+                    )
+                except:
+                    append_team = args_dev.get('extra_text').lower()
+
             # args = optional_input.split()
             # for idx, arg in enumerate(args):
             #     if arg == "--tz":
