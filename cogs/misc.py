@@ -6,9 +6,11 @@ import typing
 import pendulum
 import random
 import feedparser
+import io
 import aiohttp
 import textwrap
 import asyncio
+import os
 from bs4 import BeautifulSoup
 
 
@@ -17,6 +19,14 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
     def __init__(self, bot):
         self.bot = bot
         self.__name__ = __name__
+
+
+    @staticmethod
+    async def fetch_img(url: str):
+        async with aiohttp.ClientSession() as cs:
+            async with cs.get(url) as r:
+                # return await r.json()
+                return io.BytesIO(await r.read())
 
 
     @commands.command(name='friday')
@@ -29,6 +39,25 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
         image_url = 'https://img.cottongin.xyz/i/friday.png'
         await ctx.send(image_url)
 
+
+    @commands.command(name='wa', aliases=['wolfram', 'wolframalpha'])
+    async def get_wolfram(self, ctx, *, required_input: str = None):
+        api_key = os.environ.get("WA_API_KEY")
+        if not required_input:
+            await ctx.send("I need something to look up...")
+            return
+        image = await self.fetch_img(
+            (
+                "https://api.wolframalpha.com/v1/simple?i={query}%3F&width=400"
+                "&fontsize=13&background=black&foreground=white"
+                "&layout=labelbar&appid={api_key}"
+            ).format(
+                query=required_input,
+                api_key=api_key
+        ))
+
+        f = discord.File(image, filename="wa.png")
+        await ctx.send(file=f)
 
     
 
