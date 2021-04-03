@@ -1629,16 +1629,17 @@ class SportsCog(commands.Cog, name="Sports"):
         content = ""
 
         for game in games:
-            if not content:
-                if game.get('seriesStatus', {}).get('result'):
-                    content = "\n{}".format(
-                        game.get('seriesStatus', {}).get('result')
-                    )
-            else:
-                if game.get('seriesStatus', {}).get('result'):
-                    content += " | {}".format(
-                        game.get('seriesStatus', {}).get('result')
-                    )
+            if game.get('seriesDescription', 'Regular Season') != "Regular Season":
+                if not content:
+                    if game.get('seriesStatus', {}).get('result'):
+                        content = "\n{}".format(
+                            game.get('seriesStatus', {}).get('result')
+                        )
+                else:
+                    if game.get('seriesStatus', {}).get('result'):
+                        content += " | {}".format(
+                            game.get('seriesStatus', {}).get('result')
+                        )
             postponed = False
             if mobile_output:
                 away_team = game['teams']['away']['team']['abbreviation']
