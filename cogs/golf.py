@@ -30,7 +30,7 @@ class GolfCog(commands.Cog, name="Golf"):
     """Golf Plugin featuring various golf-related commands"""
 
     def __init__(self, bot):
-        self._debug = True
+        self._debug = False
         self.bot = bot
         self.__name__ = __name__
         try:
