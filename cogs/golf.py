@@ -151,6 +151,8 @@ class GolfCog(commands.Cog, name="Golf"):
     async def do_golf_scores(self, ctx, *, optional_input: str = None):
         """Fetches golf leaderboard for current tournament if any
         """
+        args = self._parseargs(optional_input)
+        search_player = args.get('--player') or args.get('extra_text')
         emit = ctx.send
         embed_color = 0x003e7e
         response = await self.fetch_json(self.PGA_API_URLs['current'])
@@ -183,18 +185,46 @@ class GolfCog(commands.Cog, name="Golf"):
                 url=f"https://pgatour.com",
                 icon_url="https://upload.wikimedia.org/wikipedia/en/thumb/7/77/PGA_Tour_logo.svg/188px-PGA_Tour_logo.svg.png"
             )
-        top5 = leaderboard.get('players', [])[:10]
+        if not search_player:
+            top5 = leaderboard.get('players', [])[:10]
+        else:
+            top5 = []
+            for player in leaderboard.get('players', []):
+                combined_names = "{} {}".format(
+                    player.get('player_bio', {}).get('first_name', ''),
+                    player.get('player_bio', {}).get('last_name', ''),
+                )
+                if search_player.lower() in combined_names.lower():
+                    top5.append(player)
         content = ""
-        for player in top5:
+        fields = {
+            'player': '',
+            'status': '',
+        }
+        for player in top5[:10]:
             details = ""
             if player.get('thru'):
-                details = "_ thru {} ({})_"
+                if player['thru'] >= 18:
+                    details = " **🏁F** `{1}`"
+                else:
+                    details = " ⛳️{0} `{1}`"
             else:
                 for rnd in player['rounds']:
                     if rnd['round_number'] == player['current_round']:
                         details = " ({})".format(pendulum.parse(rnd['tee_time'], tz="US/Eastern", strict=False).format("MMM Do h:mm A zz"))
                         break
-            content += "[{}]  {}  | **{}**{}\n".format(
+            fields['player'] += "`{:>2}`  {}  `{}`\n".format(
+                player['current_position'],
+                "{}. {}".format(player['player_bio']['short_name'], player['player_bio']['last_name']),
+                player['total'],
+            )
+            fields['status'] += "{}\n".format(
+                details.format(
+                    player['thru'],
+                    player['today'],
+                ),
+            )
+            content += "`{:>2}`  {}  `{}`{}\n".format(
                 player['current_position'],
                 "{}. {}".format(player['player_bio']['short_name'], player['player_bio']['last_name']),
                 player['total'],
@@ -203,7 +233,20 @@ class GolfCog(commands.Cog, name="Golf"):
                     player['today'],
                 ),
             )
-        embed.description = content
+        if ctx.author.is_on_mobile():
+            embed.add_field(
+                name="`Player`",
+                value=content
+            )
+        else:
+            embed.add_field(
+                name="`Player`",
+                value=fields['player']
+            )
+            embed.add_field(
+                name="`Status`",
+                value=fields['status']
+            )
         await emit(embed=embed)
 
 def setup(bot):
