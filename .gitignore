@@ -8,5 +8,3 @@ wip-*
 *.log
 *.http
 *.*.py
-poll.py
-scores.py
