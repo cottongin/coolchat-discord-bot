@@ -42,6 +42,7 @@ def get_prefix(bot, message):
 
 initial_extensions = ['cogs.owner',
                       'cogs.sports',
+                      'cogs.golf',
                       'cogs.mma',
                       'cogs.misc',
                       'cogs.mock',
