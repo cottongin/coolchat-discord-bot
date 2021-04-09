@@ -1,0 +1,19 @@
+{
+  "name": "cool-chat-discord-bot",
+  "version": "1.0.0",
+  "description": "A rather basic Discord bot based on discord.py and cogs to provide custom commands (mostly sports related) to the Cool Chat Discord guild.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cottongin/coolchat-discord-bot.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/cottongin/coolchat-discord-bot/issues"
+  },
+  "homepage": "https://github.com/cottongin/coolchat-discord-bot#readme"
+}
