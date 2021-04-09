@@ -233,19 +233,25 @@ class GolfCog(commands.Cog, name="Golf"):
                     player['today'],
                 ),
             )
+        if not content:
+            await ctx.send("I couldn't find any players by that name")
+            return
         if ctx.author.is_on_mobile():
             embed.add_field(
                 name="`Player`",
-                value=content
+                value=content,
+                inline=True,
             )
         else:
             embed.add_field(
                 name="`Player`",
-                value=fields['player']
+                value=fields['player'],
+                inline=True,
             )
             embed.add_field(
                 name="`Status`",
-                value=fields['status']
+                value=fields['status'],
+                inline=True,
             )
         await emit(embed=embed)
 
