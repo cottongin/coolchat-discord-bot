@@ -246,12 +246,16 @@ class ScoresCog(commands.Cog, name="Scores"):
                 homer = False
                 event = ""
                 if scoring_play['result'].get('event'):
-                    event = "{} - ".format(scoring_play['result']['event'])
+                    event = "**{}** - ".format(scoring_play['result']['event'])
                     homer = True if scoring_play['result']['eventType'] == "home_run" else False
                 if homer:
-                    hit_details = " (**{launchSpeed} mph** @ {launchAngle}° for **{totalDistance}'**)".format(
-                        **scoring_play['playEvents'][0]['hitData']
-                    )
+                    hit_details = ""
+                    for play in scoring_play['playEvents']:
+                        if play.get('hitData'):
+                            hit_details = " (**{launchSpeed} mph** @ {launchAngle}° for **{totalDistance}'**)".format(
+                                **play['hitData']
+                            )
+                            break
                 else:
                     hit_details = ""
                 message = "{} {} - {}{}{}".format(
@@ -262,16 +266,26 @@ class ScoresCog(commands.Cog, name="Scores"):
                     hit_details,
                 )
                 if details:
+                    if scoring_play['about']['halfInning'] == "bottom":
+                        home_tag = "**"
+                        away_tag = ""
+                    else:
+                        home_tag = ""
+                        away_tag = "**"
                     linescore = game.get('full_json', {}) \
                                     .get('liveData', {}) \
                                     .get('linescore', {})
-                    message = "{} {} @ {} {} - {}".format(
+                    message = "{}{} {}{} @ {}{} {}{} - {}".format(
+                        away_tag,
                         details['teams']['away']['abbreviation'],
                         # linescore['teams']['away']['runs'],
                         scoring_play['result'].get('awayScore', 0),
+                        away_tag,
+                        home_tag,
                         details['teams']['home']['abbreviation'],
                         # linescore['teams']['home']['runs'],
                         scoring_play['result'].get('homeScore', 0),
+                        home_tag,
                         message,
                     )
                 msg_hash = hash(gid + message)
