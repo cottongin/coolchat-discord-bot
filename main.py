@@ -40,13 +40,16 @@ def get_prefix(bot, message):
     return commands.when_mentioned_or(*prefixes)(bot, message)
 
 
-initial_extensions = ['cogs.owner',
-                      'cogs.sports',
-                      'cogs.golf',
-                      'cogs.mma',
-                      'cogs.misc',
-                      'cogs.mock',
-                      'cogs.weather']
+initial_extensions = [
+    'cogs.owner',
+    'cogs.sports',
+    'cogs.golf',
+    'cogs.mma',
+    'cogs.misc',
+    'cogs.mock',
+    'cogs.weather',
+    'cogs.scores',
+]
 
 bot = commands.Bot(command_prefix=get_prefix, description='A Cool Chat Bot', case_insensitive=True, intents=intents)
 
