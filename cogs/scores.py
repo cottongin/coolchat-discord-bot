@@ -55,6 +55,9 @@ class ScoresCog(commands.Cog, name="Scores"):
 
         self.monitored = {}
         self.mlb_games = {}
+        self.games_start = []
+        self.games_end = []
+        self.dupes = []
         self._parse_mlb_json_into_gameIDs()
 
 
@@ -63,6 +66,9 @@ class ScoresCog(commands.Cog, name="Scores"):
             del self.monitored
             del self.mlb_games
             del self.mlb_json
+            del self.games_start
+            del self.games_end
+            del self.dupes
         except Exception as err:
             LOGGER.error(err)
             pass
@@ -74,16 +80,21 @@ class ScoresCog(commands.Cog, name="Scores"):
         if not self.mlb_json:
             return
         for game in self.mlb_json['dates'][0]['games']:
+            gid = str(game['gamePk'])
             if game['gameUtils'].get('isWarmup') \
             or game['gameUtils'].get('isLive'):
-                if not self.mlb_games.get(str(game['gamePk'])):
-                    self.mlb_games[str(game['gamePk'])] = {'check': True}
+                if not self.mlb_games.get(gid):
+                    self.mlb_games[gid] = {'check': True}
+                    self.games_start.append(gid)
                 else:
-                    self.mlb_games[str(game['gamePk'])]['check'] = True
-                if not self.mlb_games[str(game['gamePk'])].get('full_json'):
-                    self.mlb_games[str(game['gamePk'])]['full_json'] = game
+                    self.mlb_games[gid]['check'] = True
+                # if not self.mlb_games[gid].get('full_json'):
+                self.mlb_games[gid]['full_json'] = self.fetch_json_requests(
+                    f"https://statsapi.mlb.com/api/v1.1/game/{gid}/feed/live"
+                )
             else:
-                self.mlb_games.pop(str(game['gamePk']), None)
+                self.mlb_games.pop(gid, None)
+                self.games_end.append(gid)
 
 
     @tasks.loop(seconds=10)
@@ -113,6 +124,74 @@ class ScoresCog(commands.Cog, name="Scores"):
                 self._check_date.change_interval(seconds=10)
                 LOGGER.debug("new games, resetting timers [10s]")
 
+        # check starting games
+        for gid in self.games_start.copy():
+            data = self.mlb_games[gid].get('full_json')
+            if not data:
+                return
+            gd = data['gameData']
+            away = gd['teams']['away']
+            home = gd['teams']['home']
+            away_lineup = []
+            home_lineup = []
+            away_players = data['liveData']['boxscore']['teams']['away']
+            home_players = data['liveData']['boxscore']['teams']['home']
+            for idx, player in enumerate(away_players['battingOrder']):
+                pd = away_players['players'].get("ID{}".format(player))
+                away_lineup.append("{}. {} ({})".format(
+                    idx + 1,
+                    pd['person']['fullName'],
+                    pd['position']['abbreviation'],
+                ))
+            away_pitcher = gd['probablePitchers']['away']['id']
+            home_pitcher = gd['probablePitchers']['home']['id']
+            away_lineup.append("SP: {} ({})".format(
+                away_players['players'].get(f"ID{away_pitcher}")['person']['fullName'],
+                away_players['players'].get(f"ID{away_pitcher}")['seasonStats']['pitching']['era'],
+            ))
+            for idx, player in enumerate(home_players['battingOrder']):
+                pd = home_players['players'].get("ID{}".format(player))
+                home_lineup.append("{}. {} ({})".format(
+                    idx + 1,
+                    pd['person']['fullName'],
+                    pd['position']['abbreviation'],
+                ))
+            home_lineup.append("SP: {} ({})".format(
+                home_players['players'].get(f"ID{home_pitcher}")['person']['fullName'],
+                home_players['players'].get(f"ID{home_pitcher}")['seasonStats']['pitching']['era'],
+            ))
+            message = (
+                "{} ({}) @ {} ({}) is **starting soon**\n"
+                "{} Lineup: {}\n"
+                "{} Lineup: {}"
+            ).format(
+                away['shortName'],
+                "{}-{} {}".format(
+                    away.get('record', {}).get('wins', 0),
+                    away.get('record', {}).get('losses', 0),
+                    away.get('record', {}).get('winningPercentage', '.000'),
+                ),
+                home['shortName'],
+                "{}-{} {}".format(
+                    home.get('record', {}).get('wins', 0),
+                    home.get('record', {}).get('losses', 0),
+                    home.get('record', {}).get('winningPercentage', '.000'),
+                ),
+                away['abbreviation'], " ".join(away_lineup),
+                home['abbreviation'], " ".join(home_lineup),
+            )
+            msg_hash = hash(gid + message)
+            if msg_hash not in self.dupes:
+                for channel in self.monitored:
+                    await channel.send(message)
+                self.dupes.append(msg_hash)
+            self.games_start.remove(gid)
+
+        # check ending games
+        for gid in self.games_end.copy():
+            pass
+
+        # check ongoing games
         for gid, game in self.mlb_games.copy().items():
             if not self.mlb_games[gid].get('check'):
                 continue
@@ -124,52 +203,86 @@ class ScoresCog(commands.Cog, name="Scores"):
             if not game.get('old_json'):
                 self.mlb_games[gid]['old_json'] = new_json.copy()
 
-        for gid, game in self.mlb_games.items():
+        for gid, game in self.mlb_games.copy().items():
             if not game.get('check'):
                 continue
 
             old_plays = game['old_json']['scoringPlays']
             new_plays = game['new_json']['scoringPlays']
+            swap = False
             if old_plays == new_plays:
+                swap = False
                 continue
             else:
-                scoring_plays = set(old_plays + new_plays)
+                swap = True
+                LOGGER.debug(old_plays)
+                LOGGER.debug(new_plays)
+                LOGGER.debug(old_plays + new_plays)
+                all_plays = old_plays + new_plays
+                scoring_plays = [play for play in all_plays if all_plays.count(play)==1]
+                LOGGER.debug(scoring_plays)
+                # scoring_plays = set(old_plays + new_plays)
 
             for idx in scoring_plays:
                 scoring_play = game['new_json']['allPlays'][idx]
-                details = None
-                for gd in self.mlb_json['dates'][0]['games'].copy():
-                    LOGGER.debug((
-                            "{}\t[{}] finding details ... "
-                            "mlb_json['{}'] ... {}").format(
-                                now,
-                                gid,
-                                gd['gamePk'],
-                                (int(gd['gamePk']) == int(gid)),
-                            ))
-                    if int(gd['gamePk']) == int(gid):
-                        details = gd
-                        break
+                # details = None
+                # for gd in self.mlb_json['dates'][0]['games'].copy():
+                #     if int(gd['gamePk']) == int(gid):
+                #         details = gd
+                #         LOGGER.debug((
+                #             "{}\t[{}] found details ... "
+                #             "mlb_json['{}'] ... {}").format(
+                #                 now,
+                #                 gid,
+                #                 gd['gamePk'],
+                #                 (int(gd['gamePk']) == int(gid)),
+                #             ))
+                #         break
+                details = game.get('full_json', {}).get('gameData', {})
                 halfInning = {
                     'bottom': '⬇',
                     'top': '⬆',
                 }
-                message = "{}{} - {}".format(
+                homer = False
+                event = ""
+                if scoring_play['result'].get('event'):
+                    event = "{} - ".format(scoring_play['result']['event'])
+                    homer = True if scoring_play['result']['eventType'] == "home_run" else False
+                if homer:
+                    hit_details = " (**{launchSpeed} mph** @ {launchAngle}° for **{totalDistance}'**)".format(
+                        **scoring_play['playEvents'][0]['hitData']
+                    )
+                else:
+                    hit_details = ""
+                message = "{} {} - {}{}{}".format(
                     halfInning.get(scoring_play['about']['halfInning']),
                     self.make_ordinal(scoring_play['about']['inning']),
+                    event,
                     scoring_play['result']['description'],
+                    hit_details,
                 )
                 if details:
+                    linescore = game.get('full_json', {}) \
+                                    .get('liveData', {}) \
+                                    .get('linescore', {})
                     message = "{} {} @ {} {} - {}".format(
-                        details['teams']['away']['team']['abbreviation'],
-                        details['teams']['away']['score'],
-                        details['teams']['home']['team']['abbreviation'],
-                        details['teams']['home']['score'],
+                        details['teams']['away']['abbreviation'],
+                        # linescore['teams']['away']['runs'],
+                        scoring_play['result'].get('awayScore', 0),
+                        details['teams']['home']['abbreviation'],
+                        # linescore['teams']['home']['runs'],
+                        scoring_play['result'].get('homeScore', 0),
                         message,
                     )
-                for channel in self.monitored:
-                    await channel.send(message)
-            self.mlb_games[gid] = game
+                msg_hash = hash(gid + message)
+                if msg_hash not in self.dupes:
+                    for channel in self.monitored:
+                        await channel.send(message)
+                    self.dupes.append(msg_hash)
+            del scoring_plays
+            if swap:
+                self.mlb_games[gid]['old_json'] = game['new_json']
+            # self.mlb_games[gid] = game
 
 
     @tasks.loop(seconds=10)
