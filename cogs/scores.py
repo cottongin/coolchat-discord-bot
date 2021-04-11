@@ -93,6 +93,9 @@ class ScoresCog(commands.Cog, name="Scores"):
                     f"https://statsapi.mlb.com/api/v1.1/game/{gid}/feed/live"
                 )
             else:
+                for stale_game in self.mlb_games:
+                    if str(stale_game) not in [str(x.get('gamePk')) for x in self.mlb_json['dates'][0]['games']]:
+                        self.mlb_games.pop(str(stale_game), None)
                 self.mlb_games.pop(gid, None)
                 self.games_end.append(gid)
 
@@ -104,7 +107,7 @@ class ScoresCog(commands.Cog, name="Scores"):
         LOGGER.info(f"checking games...")
         if not self.mlb_games:
             old_interval = self._check_games.seconds
-            if old_interval >= self.max_check:
+            if old_interval <= self.max_check:
                 new_interval = max(10, min(old_interval + 10, self.max_check))
                 self._check_games.change_interval(seconds=new_interval)
                 self._check_date.change_interval(seconds=new_interval)
