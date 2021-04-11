@@ -392,9 +392,9 @@ class ScoresCog(commands.Cog, name="Scores"):
                     self.make_ordinal(scoring_play['about']['inning']),
                 )
                 embed = discord.Embed(
-                    description="{}\n{}".format(
+                    description="{}\n\n{}".format(
+                        line,
                         scoring_play['result']['description'],
-                        line
                     ),
                     color=16777215,
                     timestamp=pendulum.now(),
