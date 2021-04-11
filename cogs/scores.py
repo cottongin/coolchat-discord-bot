@@ -250,10 +250,10 @@ class ScoresCog(commands.Cog, name="Scores"):
             message = " is ending"
             # SD 2 [H5 E0 LOB6] @ TEX 0 [H5 E0 LOB10] is final! 9/F (W: Craig Stammen (4.05/1-1) L: Mike Foltynewicz (4.09/0-2) S: Mark Melancon (0.00/5-0))
             away_team = data['gameData']['teams']['away']['teamName']
-            away_score = data['linescore']['teams']['away']['runs']
+            away_score = data['liveData']['linescore']['teams']['away']['runs']
             home_team = data['gameData']['teams']['home']['teamName']
-            home_score = data['linescore']['teams']['home']['runs']
-            inning = data['linescore']['currentInning']
+            home_score = data['liveData']['linescore']['teams']['home']['runs']
+            inning = data['liveData']['linescore']['currentInning']
             if away_score > home_score:
                 away_team = f"**{away_team}"
                 away_score = f"{away_score}**"
