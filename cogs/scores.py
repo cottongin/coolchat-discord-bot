@@ -1,4 +1,6 @@
+import discord
 from discord.ext import commands, tasks
+from discord.utils import get
 
 import coloredlogs
 import pendulum
@@ -59,6 +61,9 @@ class ScoresCog(commands.Cog, name="Scores"):
         self.games_end = []
         self.dupes = []
         self._parse_mlb_json_into_gameIDs()
+
+        self._check_date.start()
+        self._check_games.start()
 
 
     def cog_unload(self):
@@ -129,9 +134,11 @@ class ScoresCog(commands.Cog, name="Scores"):
 
         # check starting games
         for gid in self.games_start.copy():
+            if not self.mlb_games.get(gid):
+                continue
             data = self.mlb_games[gid].get('full_json')
             if not data:
-                return
+                continue
             gd = data['gameData']
             away = gd['teams']['away']
             home = gd['teams']['home']
@@ -163,18 +170,61 @@ class ScoresCog(commands.Cog, name="Scores"):
                 home_players['players'].get(f"ID{home_pitcher}")['person']['fullName'],
                 home_players['players'].get(f"ID{home_pitcher}")['seasonStats']['pitching']['era'],
             ))
+            weather = (
+                "**Weather Report**\n"
+                "🌡 {temp}°F\n"
+                "🪟 Conditions: {condition}\n"
+                "💨 Wind: {wind}"
+            ).format(**gd.get('weather', {}))
+            venue = (
+                "**Location**\n"
+                "__{name}__ {location}\n"
+                "{details}"
+            ).format(
+                name=gd.get('venue', {}).get('name', 'UNK'),
+                location="{city} {stateAbbrev}".format(**gd.get('venue', {}).get('location', {})),
+                details="🏟 {capacity:,} / {roofType} / {turfType}".format(
+                    **gd.get('venue', {}).get('fieldInfo', {})
+                )
+            )
+            embed = discord.Embed(
+                title="{} ({}) @ {} ({}) is _starting soon_".format(
+                    away['teamName'],
+                    "{}-{} {}".format(
+                        away.get('record', {}).get('wins', 0),
+                        away.get('record', {}).get('losses', 0),
+                        away.get('record', {}).get('winningPercentage', '.000'),
+                    ),
+                    home['teamName'],
+                    "{}-{} {}".format(
+                        home.get('record', {}).get('wins', 0),
+                        home.get('record', {}).get('losses', 0),
+                        home.get('record', {}).get('winningPercentage', '.000'),
+                    ),
+                ),
+                color=8432735,
+                description="\n".join([weather, venue]),
+            )
+            embed.add_field(
+                name="`{} Lineup`".format(away['abbreviation']),
+                value="\n".join(away_lineup)
+            )
+            embed.add_field(
+                name="`{} Lineup`".format(home['abbreviation']),
+                value="\n".join(home_lineup)
+            )
             message = (
                 "{} ({}) @ {} ({}) is **starting soon**\n"
                 "{} Lineup: {}\n"
                 "{} Lineup: {}"
             ).format(
-                away['shortName'],
+                away['teamName'],
                 "{}-{} {}".format(
                     away.get('record', {}).get('wins', 0),
                     away.get('record', {}).get('losses', 0),
                     away.get('record', {}).get('winningPercentage', '.000'),
                 ),
-                home['shortName'],
+                home['teamName'],
                 "{}-{} {}".format(
                     home.get('record', {}).get('wins', 0),
                     home.get('record', {}).get('losses', 0),
@@ -186,16 +236,51 @@ class ScoresCog(commands.Cog, name="Scores"):
             msg_hash = hash(gid + message)
             if msg_hash not in self.dupes:
                 for channel in self.monitored:
-                    await channel.send(message)
+                    await channel.send(embed=embed)
                 self.dupes.append(msg_hash)
             self.games_start.remove(gid)
 
         # check ending games
         for gid in self.games_end.copy():
-            pass
+            if not self.mlb_games.get(gid):
+                continue
+            data = self.mlb_games[gid].get('full_json')
+            if not data:
+                continue
+            message = " is ending"
+            # SD 2 [H5 E0 LOB6] @ TEX 0 [H5 E0 LOB10] is final! 9/F (W: Craig Stammen (4.05/1-1) L: Mike Foltynewicz (4.09/0-2) S: Mark Melancon (0.00/5-0))
+            away_team = data['gameData']['teams']['away']['teamName']
+            away_score = data['linescore']['teams']['away']['runs']
+            home_team = data['gameData']['teams']['home']['teamName']
+            home_score = data['linescore']['teams']['home']['runs']
+            inning = data['linescore']['currentInning']
+            if away_score > home_score:
+                away_team = f"**{away_team}"
+                away_score = f"{away_score}**"
+            elif home_score > away_score:
+                home_team = f"**{home_team}"
+                home_score = f"{home_score}**"
+            embed = discord.Embed(
+                description="{} {} @ {} {} is final! {}/F".format(
+                    away_team,
+                    away_score,
+                    home_team,
+                    home_score,
+                    inning
+                ),
+                color=13632027
+            )
+            msg_hash = hash(gid + message)
+            if msg_hash not in self.dupes:
+                for channel in self.monitored:
+                    await channel.send(embed=embed)
+                self.dupes.append(msg_hash)
+            self.games_end.remove(gid)
 
         # check ongoing games
         for gid, game in self.mlb_games.copy().items():
+            if not self.mlb_games.get(gid):
+                continue
             if not self.mlb_games[gid].get('check'):
                 continue
             LOGGER.debug(f"fetching json for {gid}")
@@ -249,13 +334,13 @@ class ScoresCog(commands.Cog, name="Scores"):
                 homer = False
                 event = ""
                 if scoring_play['result'].get('event'):
-                    event = "**{}** - ".format(scoring_play['result']['event'])
+                    event = "{} · ".format(scoring_play['result']['event'].upper())
                     homer = True if scoring_play['result']['eventType'] == "home_run" else False
                 if homer:
                     hit_details = ""
                     for play in scoring_play['playEvents']:
                         if play.get('hitData'):
-                            hit_details = " (**{launchSpeed} mph** @ {launchAngle}° for **{totalDistance}'**)".format(
+                            hit_details = "**{launchSpeed} mph**\n∡{launchAngle}°\n**{totalDistance} ft**".format(
                                 **play['hitData']
                             )
                             break
@@ -268,13 +353,16 @@ class ScoresCog(commands.Cog, name="Scores"):
                     scoring_play['result']['description'],
                     hit_details,
                 )
+                scoring_team = ""
                 if details:
                     if scoring_play['about']['halfInning'] == "bottom":
                         home_tag = "**"
                         away_tag = ""
+                        scoring_team = "{} · ".format(details['teams']['home']['abbreviation'])
                     else:
                         home_tag = ""
                         away_tag = "**"
+                        scoring_team = "{} · ".format(details['teams']['away']['abbreviation'])
                     linescore = game.get('full_json', {}) \
                                     .get('liveData', {}) \
                                     .get('linescore', {})
@@ -291,10 +379,91 @@ class ScoresCog(commands.Cog, name="Scores"):
                         home_tag,
                         message,
                     )
+                scoring_player = [scoring_play['matchup']['batter']['id'], scoring_play['matchup']['batter']['fullName']]
+                pitcher = scoring_play['matchup']['pitcher']['fullName']
+                line = "{0}{1} {2}{0} @ {3}{4} {5}{3} {6} {7}".format(
+                    away_tag,
+                    details['teams']['away']['abbreviation'],
+                    scoring_play['result'].get('awayScore', 0),
+                    home_tag,
+                    details['teams']['home']['abbreviation'],
+                    scoring_play['result'].get('homeScore', 0),
+                    halfInning.get(scoring_play['about']['halfInning']),
+                    self.make_ordinal(scoring_play['about']['inning']),
+                )
+                embed = discord.Embed(
+                    description="{}\n{}".format(
+                        scoring_play['result']['description'],
+                        line
+                    ),
+                    color=16777215,
+                    timestamp=pendulum.now(),
+                )
+                embed.set_thumbnail(
+                    url="https://img.mlbstatic.com/mlb-photos/image/upload/w_124,q_auto:best/v1/people/{player_id}/headshot/83/current".format(
+                        player_id=scoring_player[0]
+                    )
+                )
+                embed.set_author(
+                    name="{play_type}{team}{player}".format(
+                        play_type=event,
+                        team=scoring_team,
+                        player=scoring_player[1]
+                    )
+                )
+                embed.add_field(
+                    name="`vs`",
+                    value=pitcher,
+                    inline=True
+                )
+                # embed_json = {
+                #     "embed": {
+                #         # "title": "{0}{1} {2}{0} @ {3}{4} {5}{3} {6} {7}".format(
+                #         #     away_tag,
+                #         #     details['teams']['away']['abbreviation'],
+                #         #     scoring_play['result'].get('awayScore', 0),
+                #         #     home_tag,
+                #         #     details['teams']['home']['abbreviation'],
+                #         #     scoring_play['result'].get('homeScore', 0),
+                #         #     halfInning.get(scoring_play['about']['halfInning']),
+                #         #     self.make_ordinal(scoring_play['about']['inning']),
+                #         # ),
+                #         # "description": scoring_play['result']['description'],
+                #         # "color": 13632027,
+                #         # "timestamp": pendulum.now().to_iso8601_string,
+                #         # "thumbnail": {
+                #         #     "url": "https://img.mlbstatic.com/mlb-photos/image/upload/w_124,q_auto:best/v1/people/{player_id}/headshot/83/current".format(
+                #         #         player_id=scoring_player[0]
+                #         #     )
+                #         # },
+                #         # "author": {
+                #         #     # "name": "{play_type}{team}{player}".format(
+                #         #     #     play_type=event,
+                #         #     #     team=scoring_team,
+                #         #     #     player=scoring_player[1]
+                #         #     # )
+                #         # },
+                #         "fields": [
+                #             {
+                #                 "name": "`vs`",
+                #                 "value": pitcher,
+                #                 "inline": True
+                #             }
+                #         ]
+                #     }
+                # }
+                if homer:
+                    embed.add_field(
+                        name="`StatCast`",
+                        value=hit_details,
+                        inline=True
+                    )
+                # LOGGER.debug(embed_json)
+                # embed = discord.Embed.from_dict(embed_json)
                 msg_hash = hash(gid + message)
                 if msg_hash not in self.dupes:
                     for channel in self.monitored:
-                        await channel.send(message)
+                        await channel.send(embed=embed)
                     self.dupes.append(msg_hash)
             del scoring_plays
             if swap:
@@ -384,6 +553,13 @@ class ScoresCog(commands.Cog, name="Scores"):
             self._check_date.cancel()
             self._check_games.cancel()
             await ctx.send("All timers canceled")
+            return
+        elif optional_input.lower() == "restart":
+            self._check_date.cancel()
+            self._check_games.cancel()
+            self._check_date.start()
+            self._check_games.start()
+            await ctx.send("All timers restarted")
             return
         else:
             await ctx.send("What exactly would you like me to do with the timers...")
