@@ -202,7 +202,7 @@ class ScoresCog(commands.Cog, name="Scores"):
                         home.get('record', {}).get('winningPercentage', '.000'),
                     ),
                 ),
-                color=8432735,
+                color=0x80AC5F,
                 description="\n".join([weather, venue]),
             )
             embed.add_field(
@@ -268,7 +268,7 @@ class ScoresCog(commands.Cog, name="Scores"):
                     home_score,
                     inning
                 ),
-                color=13632027
+                color=0xD0021B
             )
             msg_hash = hash(gid + message)
             if msg_hash not in self.dupes:
@@ -396,7 +396,7 @@ class ScoresCog(commands.Cog, name="Scores"):
                         line,
                         scoring_play['result']['description'],
                     ),
-                    color=16777215,
+                    color=0xFFFFFF,
                     timestamp=pendulum.now(),
                 )
                 embed.set_thumbnail(
