@@ -1822,6 +1822,8 @@ class SportsCog(commands.Cog, name="Sports"):
             "thumbnail":       "https://img.cottongin.xyz/i/4tk9zpfl.png",
         }
 
+        print(embed_data)
+
         # this is really dumb and brute force way to split the games up over
         # multiple embeds because discord doesn't like fields that are greater
         # than 1024 characters in length.
@@ -1920,8 +1922,12 @@ class SportsCog(commands.Cog, name="Sports"):
                 content='**{}**'.format(random.choice(memes)), embed=embed1)
             await ctx.send(embed=embed2)
         else:
-            await ctx.send(
-                content='**{}**'.format(random.choice(memes)), embed=embed)
+            try:
+                await ctx.send(
+                    content='**{}**'.format(random.choice(memes)), embed=embed)
+            except discord.errors.HTTPException as err:
+                LOGGER.error(err)
+                pass
         if ppd_details:
             await ctx.send(embed=ppd_embed)
 
