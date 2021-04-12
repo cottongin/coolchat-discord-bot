@@ -65,6 +65,7 @@ class ScoresCog(commands.Cog, name="Scores"):
         self.mlb_games = {}
         self.games_start = []
         self.games_end = []
+        self.games_ppd = []
         self.dupes = []
         self._parse_mlb_json_into_gameIDs()
 
@@ -79,6 +80,7 @@ class ScoresCog(commands.Cog, name="Scores"):
             del self.mlb_json
             del self.games_start
             del self.games_end
+            del self.games_ppd
             del self.dupes
         except Exception as err:
             LOGGER.error(err)
@@ -107,11 +109,14 @@ class ScoresCog(commands.Cog, name="Scores"):
                 )
             elif any(_states('ppd')) and not any(_states('delay')):
                 if not self.mlb_games.get(gid):
-                    self.mlb_games[gid] = {'check': False}
+                    # self.mlb_games[gid] = {'check': False}
                     # self.games_ppd.append(gid)
-                else:
-                    self.mlb_games[gid]['check'] = False
-                self.mlb_games[gid]['ppd'] = True
+                    continue
+                # else:
+                #     self.mlb_games[gid]['check'] = False
+                # self.mlb_games[gid]['ppd'] = True
+                self.games_ppd.append(gid)
+                self.mlb_games.pop(gid, None)
             elif any(_states('delay')) and not any(_states('ppd')):
                 if not self.mlb_games.get(gid):
                     self.mlb_games[gid] = {'check': False}
@@ -362,7 +367,7 @@ class ScoresCog(commands.Cog, name="Scores"):
                     hit_details = ""
                     for play in scoring_play['playEvents']:
                         if play.get('hitData'):
-                            hit_details = "**{launchSpeed} mph**\n∡{launchAngle}°\n**{totalDistance} ft**".format(
+                            hit_details = "**{launchSpeed} mph** · ∡{launchAngle}° · **{totalDistance} ft**".format(
                                 **play['hitData']
                             )
                             break
@@ -414,12 +419,12 @@ class ScoresCog(commands.Cog, name="Scores"):
                     self.make_ordinal(scoring_play['about']['inning']),
                 )
                 embed = discord.Embed(
-                    description="{}\n\n{}".format(
+                    description="{}\n•{}".format(
                         line,
                         scoring_play['result']['description'],
                     ),
                     color=0xFFFFFF,
-                    timestamp=pendulum.now(),
+                    # timestamp=pendulum.now(),
                 )
                 embed.set_thumbnail(
                     url="https://img.mlbstatic.com/mlb-photos/image/upload/w_124,q_auto:best/v1/people/{player_id}/headshot/83/current".format(
