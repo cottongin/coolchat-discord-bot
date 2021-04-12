@@ -55,6 +55,12 @@ class ScoresCog(commands.Cog, name="Scores"):
             date=self.api_date
         ))
 
+        self.states = {
+            'live': ['isLive', 'isWarmup'],
+            'ppd': ['isCancelled', 'isPostponed', 'isSuspended'],
+            'delay': ['isDelayed', 'isInGameDelay']
+        }
+
         self.monitored = {}
         self.mlb_games = {}
         self.games_start = []
@@ -85,9 +91,11 @@ class ScoresCog(commands.Cog, name="Scores"):
         if not self.mlb_json:
             return
         for game in self.mlb_json['dates'][0]['games']:
+            def _states(state):
+                return [game['gameUtils'].get(key) for key in self.states[state]]
             gid = str(game['gamePk'])
-            if game['gameUtils'].get('isWarmup') \
-            or game['gameUtils'].get('isLive'):
+
+            if any(_states('live')) and not any(_states('ppd')):
                 if not self.mlb_games.get(gid):
                     self.mlb_games[gid] = {'check': True}
                     self.games_start.append(gid)
@@ -97,6 +105,20 @@ class ScoresCog(commands.Cog, name="Scores"):
                 self.mlb_games[gid]['full_json'] = self.fetch_json_requests(
                     f"https://statsapi.mlb.com/api/v1.1/game/{gid}/feed/live"
                 )
+            elif any(_states('ppd')) and not any(_states('delay')):
+                if not self.mlb_games.get(gid):
+                    self.mlb_games[gid] = {'check': False}
+                    # self.games_ppd.append(gid)
+                else:
+                    self.mlb_games[gid]['check'] = False
+                self.mlb_games[gid]['ppd'] = True
+            elif any(_states('delay')) and not any(_states('ppd')):
+                if not self.mlb_games.get(gid):
+                    self.mlb_games[gid] = {'check': False}
+                    # self.games_ppd.append(gid)
+                else:
+                    self.mlb_games[gid]['check'] = False
+                self.mlb_games[gid]['delay'] = True
             else:
                 for stale_game in self.mlb_games:
                     if str(stale_game) not in [str(x.get('gamePk')) for x in self.mlb_json['dates'][0]['games']]:
