@@ -149,7 +149,9 @@ class ScoresCog(commands.Cog, name="Scores"):
                 self.mlb_games.pop(gid, None)
                 self.games_end.append(gid)
             else:
-                for stale_game in self.mlb_games:
+                for stale_game in self.mlb_games.copy():
+                    if not self.mlb_games.get(stale_game):
+                        continue
                     if str(stale_game) not in [str(x.get('gamePk')) for x in self.mlb_json['dates'][0]['games']]:
                         self.mlb_games.pop(str(stale_game), None)
                 self.mlb_games.pop(gid, None)
