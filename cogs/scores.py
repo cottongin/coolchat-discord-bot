@@ -1,14 +1,17 @@
-import discord
-from discord.ext import commands, tasks
-from discord.utils import get
+# coding=utf-8
+from __future__ import absolute_import, division, print_function, unicode_literals
 
+import logging
+import shlex
+
+import aiohttp
 import coloredlogs
 import pendulum
 import requests
 
-import aiohttp
-import logging
-import shlex
+import discord
+from discord.ext import commands, tasks
+from discord.utils import get
 
 
 LOGGER = logging.getLogger(__name__)
@@ -58,7 +61,8 @@ class ScoresCog(commands.Cog, name="Scores"):
         self.states = {
             'live': ['isLive', 'isWarmup'],
             'ppd': ['isCancelled', 'isPostponed', 'isSuspended'],
-            'delay': ['isDelayed', 'isInGameDelay']
+            'delay': ['isDelayed', 'isInGameDelay'],
+            'final': ['isFinal'],
         }
 
         self.monitored = {}
@@ -89,12 +93,29 @@ class ScoresCog(commands.Cog, name="Scores"):
         self._check_games.cancel()
 
 
+    def _get_emoji(self, guild_query, emoji_query, mode=None):
+        emoji_name = f"{guild_query.lower()}_{emoji_query.lower()}"
+        guild = get(self.bot.guilds, name=guild_query.lower())
+        if not guild:
+            return ""
+        emoji = get(guild.emojis, name=emoji_name)
+        if not emoji:
+            return ""
+        if mode == "url":
+            emoji = emoji.url
+        else:
+            emoji = "{} ".format(emoji)
+        return emoji
+
+
     def _parse_mlb_json_into_gameIDs(self):
         if not self.mlb_json:
             return
         for game in self.mlb_json['dates'][0]['games']:
+
             def _states(state):
                 return [game['gameUtils'].get(key) for key in self.states[state]]
+
             gid = str(game['gamePk'])
 
             if any(_states('live')) and not any(_states('ppd')):
@@ -124,18 +145,20 @@ class ScoresCog(commands.Cog, name="Scores"):
                 else:
                     self.mlb_games[gid]['check'] = False
                 self.mlb_games[gid]['delay'] = True
+            elif any(_states('final')):
+                self.mlb_games.pop(gid, None)
+                self.games_end.append(gid)
             else:
                 for stale_game in self.mlb_games:
                     if str(stale_game) not in [str(x.get('gamePk')) for x in self.mlb_json['dates'][0]['games']]:
                         self.mlb_games.pop(str(stale_game), None)
                 self.mlb_games.pop(gid, None)
-                self.games_end.append(gid)
 
 
     @tasks.loop(seconds=10)
     async def _check_games(self):
         LOGGER.info("--------------------------------------")
-        now = pendulum.now().format("DD-MMM HH:mm:ss")
+        # now = pendulum.now().format("DD-MMM HH:mm:ss")
         LOGGER.info(f"checking games...")
         if not self.mlb_games:
             old_interval = self._check_games.seconds
@@ -214,14 +237,18 @@ class ScoresCog(commands.Cog, name="Scores"):
                     **gd.get('venue', {}).get('fieldInfo', {})
                 )
             )
+            away_emoji = self._get_emoji('mlb', away['abbreviation'])
+            home_emoji = self._get_emoji('mlb', home['abbreviation'])
             embed = discord.Embed(
-                title="{} ({}) @ {} ({}) is _starting soon_".format(
+                title="{}{} ({}) @ {}{} ({}) is _starting soon_".format(
+                    away_emoji,
                     away['teamName'],
                     "{}-{} {}".format(
                         away.get('record', {}).get('wins', 0),
                         away.get('record', {}).get('losses', 0),
                         away.get('record', {}).get('winningPercentage', '.000'),
                     ),
+                    home_emoji,
                     home['teamName'],
                     "{}-{} {}".format(
                         home.get('record', {}).get('wins', 0),
@@ -281,6 +308,8 @@ class ScoresCog(commands.Cog, name="Scores"):
             home_team = data['gameData']['teams']['home']['teamName']
             home_score = data['liveData']['linescore']['teams']['home']['runs']
             inning = data['liveData']['linescore']['currentInning']
+            away_emoji = self._get_emoji('mlb', data['gameData']['teams']['away']['abbreviation'])
+            home_emoji = self._get_emoji('mlb', data['gameData']['teams']['home']['abbreviation'])
             if away_score > home_score:
                 away_team = f"**{away_team}"
                 away_score = f"{away_score}**"
@@ -288,9 +317,11 @@ class ScoresCog(commands.Cog, name="Scores"):
                 home_team = f"**{home_team}"
                 home_score = f"{home_score}**"
             embed = discord.Embed(
-                description="{} {} @ {} {} is final! {}/F".format(
+                description="{}{} {} @ {}{} {} is final! {}/F".format(
+                    away_emoji,
                     away_team,
                     away_score,
+                    home_emoji,
                     home_team,
                     home_score,
                     inning
@@ -319,6 +350,8 @@ class ScoresCog(commands.Cog, name="Scores"):
                 self.mlb_games[gid]['old_json'] = new_json.copy()
 
         for gid, game in self.mlb_games.copy().items():
+            if not self.mlb_games.get(gid):
+                continue
             if not game.get('check'):
                 continue
 
@@ -330,9 +363,9 @@ class ScoresCog(commands.Cog, name="Scores"):
                 continue
             else:
                 swap = True
-                LOGGER.debug(old_plays)
-                LOGGER.debug(new_plays)
-                LOGGER.debug(old_plays + new_plays)
+                # LOGGER.debug(old_plays)
+                # LOGGER.debug(new_plays)
+                # LOGGER.debug(old_plays + new_plays)
                 all_plays = old_plays + new_plays
                 scoring_plays = [play for play in all_plays if all_plays.count(play)==1]
                 LOGGER.debug(scoring_plays)
@@ -380,16 +413,23 @@ class ScoresCog(commands.Cog, name="Scores"):
                     scoring_play['result']['description'],
                     hit_details,
                 )
+                away_emoji = self._get_emoji('mlb', details['teams']['away']['abbreviation'])
+                home_emoji = self._get_emoji('mlb', details['teams']['home']['abbreviation'])
                 scoring_team = ""
+                scoring_team_emoji_url = ""
                 if details:
                     if scoring_play['about']['halfInning'] == "bottom":
                         home_tag = "**"
                         away_tag = ""
                         scoring_team = "{} · ".format(details['teams']['home']['abbreviation'])
+                        scoring_team_emoji_url = self._get_emoji('mlb', details['teams']['home']['abbreviation'], 'url')
+                        away_or_home = "away"
                     else:
                         home_tag = ""
                         away_tag = "**"
                         scoring_team = "{} · ".format(details['teams']['away']['abbreviation'])
+                        scoring_team_emoji_url = self._get_emoji('mlb', details['teams']['away']['abbreviation'], 'url')
+                        away_or_home = "home"
                     linescore = game.get('full_json', {}) \
                                     .get('liveData', {}) \
                                     .get('linescore', {})
@@ -407,8 +447,37 @@ class ScoresCog(commands.Cog, name="Scores"):
                         message,
                     )
                 scoring_player = [scoring_play['matchup']['batter']['id'], scoring_play['matchup']['batter']['fullName']]
-                pitcher = scoring_play['matchup']['pitcher']['fullName']
-                line = "{0}{1} {2}{0} @ {3}{4} {5}{3} {6} {7}".format(
+                pitcher_id = "ID{}".format(scoring_play['matchup']['pitcher']['id'])
+                # t = game.get('full_json')
+                # t = t.get('liveData')
+                # t = t.get('boxscore')
+                # t = t.get('teams')
+                # t = t.get(away_or_home)
+                # t = t.get('players')
+                # print(t, pitcher_id)
+                # t = t.get(pitcher_id)
+                # t = t.get('stats')
+                # t = t.get('pitching')
+                # t = t.get('numberOfPitches', 0)
+                # print(t)
+                num_pitches = game.get(
+                    'full_json', {}).get(
+                        'liveData', {}).get(
+                            'boxscore', {}).get(
+                                'teams', {}).get(
+                                    away_or_home, {}).get(
+                                        'players', {}).get(
+                                            pitcher_id, {}).get(
+                                                'stats', {}).get(
+                                                    'pitching', {}).get(
+                                                        'numberOfPitches', 0)
+                pitcher = "{}{}".format(
+                    scoring_play['matchup']['pitcher']['fullName'],
+                    " (pitch #{})".format(
+                        num_pitches
+                    ),
+                )
+                line = "{0}{8}{1} {2}{0} @ {3}{9}{4} {5}{3} {6} {7}".format(
                     away_tag,
                     details['teams']['away']['abbreviation'],
                     scoring_play['result'].get('awayScore', 0),
@@ -417,9 +486,11 @@ class ScoresCog(commands.Cog, name="Scores"):
                     scoring_play['result'].get('homeScore', 0),
                     halfInning.get(scoring_play['about']['halfInning']),
                     self.make_ordinal(scoring_play['about']['inning']),
+                    away_emoji,
+                    home_emoji
                 )
                 embed = discord.Embed(
-                    description="{}\n•{}".format(
+                    description="{}\n{}".format(
                         line,
                         scoring_play['result']['description'],
                     ),
@@ -427,15 +498,16 @@ class ScoresCog(commands.Cog, name="Scores"):
                     # timestamp=pendulum.now(),
                 )
                 embed.set_thumbnail(
-                    url="https://img.mlbstatic.com/mlb-photos/image/upload/w_124,q_auto:best/v1/people/{player_id}/headshot/83/current".format(
-                        player_id=scoring_player[0]
-                    )
+                    url=scoring_team_emoji_url
                 )
                 embed.set_author(
                     name="{play_type}{team}{player}".format(
                         play_type=event,
                         team=scoring_team,
                         player=scoring_player[1]
+                    ),
+                    icon_url="https://img.mlbstatic.com/mlb-photos/image/upload/w_124,q_auto:best/v1/people/{player_id}/headshot/83/current".format(
+                        player_id=scoring_player[0]
                     )
                 )
                 embed.add_field(
