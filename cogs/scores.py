@@ -118,7 +118,7 @@ class ScoresCog(commands.Cog, name="Scores"):
 
             gid = str(game['gamePk'])
 
-            if any(_states('live')) and not any(_states('ppd') and not any(_states('final')):
+            if any(_states('live')) and not any(_states('ppd')) and not any(_states('final')):
                 if not self.mlb_games.get(gid):
                     self.mlb_games[gid] = {'check': True}
                     self.games_start.append(gid)
@@ -128,7 +128,7 @@ class ScoresCog(commands.Cog, name="Scores"):
                 self.mlb_games[gid]['full_json'] = self.fetch_json_requests(
                     f"https://statsapi.mlb.com/api/v1.1/game/{gid}/feed/live"
                 )
-            elif any(_states('ppd')) and not any(_states('delay')) and not any(_states('final'):
+            elif any(_states('ppd')) and not any(_states('delay')) and not any(_states('final')):
                 if not self.mlb_games.get(gid):
                     # self.mlb_games[gid] = {'check': False}
                     # self.games_ppd.append(gid)
