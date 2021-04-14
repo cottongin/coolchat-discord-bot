@@ -402,9 +402,13 @@ class ScoresCog(commands.Cog, name="Scores"):
                     hit_details = ""
                     for play in scoring_play['playEvents']:
                         if play.get('hitData'):
-                            hit_details = "**{launchSpeed} mph** · ∡{launchAngle}° · **{totalDistance} ft**".format(
-                                **play['hitData']
-                            )
+                            try:
+                                hit_details = "**{launchSpeed} mph** · ∡{launchAngle}° · **{totalDistance} ft**".format(
+                                    **play['hitData']
+                                )
+                            except KeyError as err:
+                                LOGGER.error(err)
+                                continue
                             break
                 else:
                     hit_details = ""
