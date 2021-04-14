@@ -500,7 +500,7 @@ class ScoresCog(commands.Cog, name="Scores"):
                     embed = discord.Embed(
                         description="{}\n{}".format(
                             line,
-                            scoring_play['result']['description'],
+                            scoring_play['result'].get('description', 'Error fetching scoring details'),
                         ),
                         color=0xFFFFFF,
                         # timestamp=pendulum.now(),

@@ -33,14 +33,14 @@ class SportsCog(commands.Cog, name="Sports"):
     def __init__(self, bot):
         self.bot = bot
         self.__name__ = __name__
-        try:
-            self.db = redis.from_url(
-                os.environ.get("REDIS_URL"),
-                socket_timeout=3
-            )
-        except Exception as e:
-            LOGGER.error(e)
-            pass
+        # try:
+        #     self.db = redis.from_url(
+        #         os.environ.get("REDIS_URL"),
+        #         socket_timeout=3
+        #     )
+        # except Exception as e:
+        #     LOGGER.error(e)
+        #     pass
 
         self.default_tz = "US/Eastern"
         # ^ If a user doesn't provide a tz what should we use?

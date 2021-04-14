@@ -9,6 +9,8 @@ import logging
 import coloredlogs
 
 from dotenv import load_dotenv
+import redis
+
 try:
     # dev build only requires this
     load_dotenv('.env')
@@ -28,6 +30,20 @@ except:
 #     datefmt='%Y-%m-%d %H:%M:%S',
 #     style='{'
 # )
+
+class Bot(commands.Bot):
+    def __init__(self, **kwargs):
+        super().__init__()
+
+        try:
+            self.db = redis.from_url(
+                os.environ.get("REDIS_URL"),
+                socket_timeout=3
+            )
+        except Exception as e:
+            LOGGER.error(e)
+            self.db = {}
+            pass
 
 def get_prefix(bot, message):
     """A callable Prefix for our bot. This could be edited to allow per server prefixes."""
@@ -51,7 +67,8 @@ initial_extensions = [
     'cogs.scores',
 ]
 
-bot = commands.Bot(command_prefix=get_prefix, description='A Cool Chat Bot', case_insensitive=True, intents=intents)
+bot = Bot(command_prefix=get_prefix, description='A Cool Chat Bot', case_insensitive=True, intents=intents)
+# bot = commands.Bot(command_prefix=get_prefix, description='A Cool Chat Bot', case_insensitive=True, intents=intents)
 
 if __name__ == '__main__':
     for extension in initial_extensions:
