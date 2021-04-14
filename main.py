@@ -33,7 +33,13 @@ except:
 
 class Bot(commands.Bot):
     def __init__(self, **kwargs):
-        super().__init__()
+        super().__init__(
+            command_prefix=kwargs.pop('command_prefix'),
+            description=kwargs.pop('description'),
+            case_insensitive=kwargs.pop('case_insensitive'),
+            intents=kwargs.pop('intents')
+
+        )
 
         try:
             self.db = redis.from_url(

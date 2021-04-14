@@ -2,6 +2,7 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
+import pickle
 import shlex
 
 import aiohttp
@@ -65,12 +66,32 @@ class ScoresCog(commands.Cog, name="Scores"):
             'final': ['isFinal'],
         }
 
-        self.monitored = {}
-        self.mlb_games = {}
-        self.games_start = []
-        self.games_end = []
-        self.games_ppd = []
-        self.dupes = []
+        try:
+            _ = pickle.loads(self.bot.db.get('scores_db'))
+            print("loaded db")
+        except Exception as err:
+            LOGGER.debug(err)
+            _ = {}
+
+        self.monitored = _.get('monitored', {})
+        self.mlb_games = _.get('mlb_games', {})
+        self.games_start = _.get('games_start', [])
+        self.games_end = _.get('games_end', [])
+        self.games_ppd = _.get('games_ppd', [])
+        self.dupes = _.get('dupes', [])
+
+        
+
+        #     self.monitored = _.get('monitored')
+        #     self.mlb_games = {}
+        #     self.games_start = []
+        #     self.games_end = []
+        #     self.games_ppd = []
+        #     self.dupes = []
+        # except Exception as e:
+        #     LOGGER.debug(e)
+        #     pass
+
         self._parse_mlb_json_into_gameIDs()
 
         self._check_date.start()
@@ -79,16 +100,27 @@ class ScoresCog(commands.Cog, name="Scores"):
 
     def cog_unload(self):
         try:
-            del self.monitored
-            del self.mlb_games
             del self.mlb_json
-            del self.games_start
-            del self.games_end
-            del self.games_ppd
-            del self.dupes
+            _ = {
+                'monitored': self.monitored,
+                'mlb_games': self.mlb_games,
+                'games_start': self.games_start,
+                'games_ppd': self.games_ppd,
+                'games_end': self.games_end,
+                'dupes': self.dupes,
+            }
+            __ = pickle.dumps(_)
+            self.bot.db.set('scores_db', __)
         except Exception as err:
             LOGGER.error(err)
             pass
+        del self.monitored
+        del self.mlb_games
+        del self.mlb_json
+        del self.games_start
+        del self.games_end
+        del self.games_ppd
+        del self.dupes
         self._check_date.cancel()
         self._check_games.cancel()
 

@@ -79,7 +79,7 @@ class SportsCog(commands.Cog, name="Sports"):
         #     self.user_db = {}
 
         try:
-            _ = self.db.get('sports_db')
+            _ = self.bot.db.get('sports_db')
             self.user_db = pickle.loads(_)
         except Exception as e:
             LOGGER.debug(e)
@@ -2353,7 +2353,7 @@ class SportsCog(commands.Cog, name="Sports"):
         # with open('data/sports_db.json', 'w+') as f:
         #     json.dump(self.user_db, f)
         _ = pickle.dumps(self.user_db)
-        self.db.set('sports_db', _)
+        self.bot.db.set('sports_db', _)
 
     def _fetch_teams(self, mode):
         if mode == "NHL":
