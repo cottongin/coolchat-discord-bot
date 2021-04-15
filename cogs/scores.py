@@ -79,8 +79,6 @@ class ScoresCog(commands.Cog, name="Scores"):
         self.games_ppd = _.get('games_ppd', [])
         self.dupes = _.get('dupes', [])
 
-        
-
         #     self.monitored = _.get('monitored')
         #     self.mlb_games = {}
         #     self.games_start = []
@@ -402,7 +400,7 @@ class ScoresCog(commands.Cog, name="Scores"):
                     # LOGGER.debug(new_plays)
                     # LOGGER.debug(old_plays + new_plays)
                     all_plays = old_plays + new_plays
-                    scoring_plays = [play for play in all_plays if all_plays.count(play)==1]
+                    scoring_plays = [play for play in all_plays if all_plays.count(play) == 1]
                     LOGGER.debug(scoring_plays)
                     # scoring_plays = set(old_plays + new_plays)
 
@@ -469,9 +467,9 @@ class ScoresCog(commands.Cog, name="Scores"):
                             scoring_team = "{} · ".format(details['teams']['away']['abbreviation'])
                             scoring_team_emoji_url = self._get_emoji('mlb', details['teams']['away']['abbreviation'], 'url')
                             away_or_home = "home"
-                        linescore = game.get('full_json', {}) \
-                                        .get('liveData', {}) \
-                                        .get('linescore', {})
+                        # linescore = game.get('full_json', {}) \
+                        #                 .get('liveData', {}) \
+                        #                 .get('linescore', {})
                         message = "{}{} {}{} @ {}{} {}{} - {}".format(
                             away_tag,
                             details['teams']['away']['abbreviation'],
@@ -645,7 +643,7 @@ class ScoresCog(commands.Cog, name="Scores"):
     #         message = ""
     #         for key_, value_ in self.mlb_games.items():
     #             message += str(value_) + ", " + str(key_) + "\n"
-            
+
     #         await value.send(message)
 
 
@@ -712,7 +710,7 @@ class ScoresCog(commands.Cog, name="Scores"):
 
 
 #############
-## Helpers ##
+#  Helpers  #
 #############
 
 
@@ -728,7 +726,8 @@ class ScoresCog(commands.Cog, name="Scores"):
         try:
             response = requests.get(url).json()
             return response
-        except:
+        except Exception as err:
+            LOGGER.error(err)
             return
 
 
@@ -757,13 +756,13 @@ class ScoresCog(commands.Cog, name="Scores"):
 
             options = {
                 k: True if v.startswith('-') else v
-                for k,v in zip(args, args[1:]+["--"]) if k.startswith('-')
+                for k, v in zip(args, args[1:] + ["--"]) if k.startswith('-')
             }
 
             extra = args
             if options:
                 extra = []
-                for k,v in options.items():
+                for k, v in options.items():
                     for arg in args:
                         if arg != k and arg != v:
                             extra.append(arg)
@@ -791,19 +790,20 @@ class ScoresCog(commands.Cog, name="Scores"):
                 return
         if args_dev.get('extra_text', '').lower() == "yesterday":
             date = pendulum.yesterday().in_tz(
-                user_timezone or self.default_other_tz)
+                timezone or self.default_other_tz)
         elif args_dev.get('extra_text', '').lower() == "tomorrow":
             date = pendulum.tomorrow().in_tz(
-                user_timezone or self.default_other_tz)
+                timezone or self.default_other_tz)
         else:
             try:
                 date = pendulum.parse(
                     args_dev.get('extra_text'), 
                     strict=False
                 )
-            except:
+            except Exception as err:
+                LOGGER.error(err)
                 append_team = args_dev.get('extra_text').lower()
-        
+
         return date, append_team, timezone, args_dev
 
     async def _build_embed(self, data, mobile=False, color=0x98FB98):
