@@ -68,7 +68,6 @@ class ScoresCog(commands.Cog, name="Scores"):
 
         try:
             _ = pickle.loads(self.bot.db.get('scores_db'))
-            print("loaded db")
         except Exception as err:
             LOGGER.debug(err)
             _ = {}
@@ -617,11 +616,11 @@ class ScoresCog(commands.Cog, name="Scores"):
     async def _check_date(self):
         # now = pendulum.now()
         try:
-            if pendulum.today() != self.date:
+            if pendulum.today('US/Pacific') != self.date:
                 LOGGER.info("Day Change Detected\nSwapping...")
                 LOGGER.debug("{} {}".format(self.api_date, self.date))
-                self.date = pendulum.today()
-                self.api_date = pendulum.today().format("YYYY-MM-DD")
+                self.date = pendulum.today('US/Pacific')
+                self.api_date = pendulum.today('US/Pacific').format("YYYY-MM-DD")
                 LOGGER.debug("{} {}".format(self.api_date, self.date))
             LOGGER.info(
                 "fetching main json - {}".format(
