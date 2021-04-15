@@ -797,7 +797,7 @@ class ScoresCog(commands.Cog, name="Scores"):
         else:
             try:
                 date = pendulum.parse(
-                    args_dev.get('extra_text'), 
+                    args_dev.get('extra_text'),
                     strict=False
                 )
             except Exception as err:
