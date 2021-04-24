@@ -109,7 +109,7 @@ class ScoresCog(commands.Cog, name="Scores"):
             __ = pickle.dumps(_)
             self.bot.db.set('scores_db', __)
         except Exception as err:
-            LOGGER.error(err)
+            LOGGER.error(f"[1] {err}")
             pass
         del self.monitored
         del self.mlb_games
@@ -323,7 +323,7 @@ class ScoresCog(commands.Cog, name="Scores"):
                 msg_hash = hash(gid + message)
                 if msg_hash not in self.dupes:
                     for channel in self.monitored:
-                        await channel.send(embed=embed)
+                        await self.bot.get_channel(channel).send(embed=embed)
                     self.dupes.append(msg_hash)
                 self.games_start.remove(gid)
 
@@ -364,7 +364,7 @@ class ScoresCog(commands.Cog, name="Scores"):
                 msg_hash = hash(gid + message)
                 if msg_hash not in self.dupes:
                     for channel in self.monitored:
-                        await channel.send(embed=embed)
+                        await self.bot.get_channel(channel).send(embed=embed)
                     self.dupes.append(msg_hash)
                 self.games_end.remove(gid)
 
@@ -438,7 +438,7 @@ class ScoresCog(commands.Cog, name="Scores"):
                                         **play['hitData']
                                     )
                                 except KeyError as err:
-                                    LOGGER.error(err)
+                                    LOGGER.error(f"[2] {err}")
                                     continue
                                 break
                     else:
@@ -599,14 +599,14 @@ class ScoresCog(commands.Cog, name="Scores"):
                     msg_hash = hash(gid + message)
                     if msg_hash not in self.dupes:
                         for channel in self.monitored:
-                            await channel.send(embed=embed)
+                            await self.bot.get_channel(channel).send(embed=embed)
                         self.dupes.append(msg_hash)
                 del scoring_plays
                 if swap:
                     self.mlb_games[gid]['old_json'] = game['new_json']
                 # self.mlb_games[gid] = game
         except Exception as err:
-            LOGGER.error(err)
+            LOGGER.error(f"[3] {err}")
             pass
 
 
@@ -632,19 +632,23 @@ class ScoresCog(commands.Cog, name="Scores"):
             )
             self._parse_mlb_json_into_gameIDs()
         except Exception as err:
-            LOGGER.error(err)
+            LOGGER.error(f"[4] {err}")
             pass
 
 
-    # @commands.command(name='testlist')
-    # async def testlist(self, ctx):
-    #     for key, value in self.monitored.items():
-    #         await value.send(f"{value}")
-    #         message = ""
-    #         for key_, value_ in self.mlb_games.items():
-    #             message += str(value_) + ", " + str(key_) + "\n"
+    @commands.command(name='testlist')
+    async def testlist(self, ctx):
+        if not self.monitored:
+            await ctx.send('no channels found')
+            return
+        for key, value in self.monitored.items():
+            await self.bot.get_channel(value).send(f"{value}")
+            message = ""
+            for key_, value_ in self.mlb_games.items():
+                message += str(value_) + ", " + str(key_) + "\n"
 
-    #         await value.send(message)
+            if message:
+                await self.bot.get_channel(value).send(message)
 
 
     @commands.command(name='start', aliases=['startscores'])
@@ -657,8 +661,8 @@ class ScoresCog(commands.Cog, name="Scores"):
         if not self.mlb_json:
             return
 
-        if ctx.channel not in self.monitored:
-            self.monitored[ctx.channel] = ctx.channel
+        if ctx.channel.id not in self.monitored:
+            self.monitored[ctx.channel.id] = ctx.channel.id
             await ctx.send(f"Added `{ctx.channel}` to my announce list")
         else:
             await ctx.send(f"`{ctx.channel}` is already on my announce list")
@@ -670,8 +674,8 @@ class ScoresCog(commands.Cog, name="Scores"):
         """Stop emitting MLB live scores in the channel this command is sent
         from
         """
-        if ctx.channel in self.monitored:
-            self.monitored.pop(ctx.channel, None)
+        if ctx.channel.id in self.monitored:
+            self.monitored.pop(ctx.channel.id, None)
             await ctx.send(f"Removed `{ctx.channel}` from my announce list")
         else:
             await ctx.send(f"`{ctx.channel}` isn't on my announce list")
@@ -727,7 +731,7 @@ class ScoresCog(commands.Cog, name="Scores"):
             response = requests.get(url).json()
             return response
         except Exception as err:
-            LOGGER.error(err)
+            LOGGER.error(f"[5] {err}")
             return
 
 
@@ -801,7 +805,7 @@ class ScoresCog(commands.Cog, name="Scores"):
                     strict=False
                 )
             except Exception as err:
-                LOGGER.error(err)
+                LOGGER.error(f"[6] {err}")
                 append_team = args_dev.get('extra_text').lower()
 
         return date, append_team, timezone, args_dev
