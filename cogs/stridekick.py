@@ -327,33 +327,66 @@ class StridekickCog(commands.Cog, name="Stridekick"):
         print(temp_color)
 
 
-        embed = discord.Embed(
-            title=challenge['group']['title'],
-            color=temp_color,
-            description="{} participants · Ends {}\n".format(
-                challenge['group']['memberCount'],
-                challenge['group']['endDate']
+        cookies = random.randint(50,500)
+        barn = [
+            "Barn slept in until 4pm four out of the last six days",
+            "Barn drank 3 handles of rubbing alcohol (Add Lime)",
+            "Barn ate 152.3 lbs of Linguiça",
+            "Barn rolled over {:,} times while sleeping for {:,} hours".format(
+                random.randint(2000, 6000),
+                random.randint(50, 500),
             ),
+            "Barn baked {} cookies (but ate {} of them!)".format(
+                cookies,
+                random.randint(1, cookies)
+            )
+        ]
 
-        )
-        embed.set_image(
-            url=challenge['group']['image']
-        )
+        passed_check = False if random.random() <= 0.05 else True
+        random_barn = ""
+        if not passed_check:
+            random_barn = random.choice(barn)
 
         leaderboard = json_data[1].get('data', {})
-
         lb_list = leaderboard['boom']['leaderboard']['pagedSummaries']['summaries']
-        embed.set_thumbnail(
-            url=lb_list[0]['member']['avatar']
-        )
         pad = 0
         step_pad = 0
         avg_pad = 0
+        total_steps = 0
+        total_miles = 0
         for entry in lb_list:
+            total_steps += entry['stepsTotal']
+            total_miles += entry['distanceTotal']
             pad = max([pad, len(entry['member']['username'])])
             avg_pad = max([avg_pad, len("{:,}".format(entry['stepsAverage']))])
             step_pad = max([step_pad, len("{:,}".format(entry['stepsTotal']))])
 
+        details = ""
+        if random_barn:
+            random_barn = f"\n· {random_barn}"
+        try:
+            details = "During this challenge...\n· Cool Chat has taken **{:,.2f} steps**\n· We've walked **{:,.2f} miles**{}".format(
+                total_steps, total_miles, random_barn
+            )
+        except Exception as err:
+            LOGGER.error(err)
+            pass
+
+        embed = discord.Embed(
+            title=challenge['group']['title'],
+            color=temp_color,
+            description="{} participants · Ends {}\n{}".format(
+                challenge['group']['memberCount'],
+                challenge['group']['endDate'],
+                details
+            ),
+        )
+        embed.set_image(
+            url=challenge['group']['image']
+        )
+        embed.set_thumbnail(
+            url=lb_list[0]['member']['avatar']
+        )
         embed.add_field(
             name="`Standings`",
             value="\u200b",
@@ -376,7 +409,7 @@ class StridekickCog(commands.Cog, name="Stridekick"):
             #     step_pad=step_pad,
             #     avg_pad=avg_pad
             # )
-            if len(entry['member']['username']) >= len("cottongintonic"):
+            if len(entry['member']['username']) >= len("cottonginto"):
                 name = entry['member']['username'][:-5] + "…"
             else:
                 name = entry['member']['username']
