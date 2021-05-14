@@ -365,7 +365,7 @@ class StridekickCog(commands.Cog, name="Stridekick"):
         if random_barn:
             random_barn = f"\n· {random_barn}"
         try:
-            details = "During this challenge...\n· Cool Chat has taken **{:,.2f} steps**\n· We've walked **{:,.2f} miles**{}".format(
+            details = "During this challenge...\n· Cool Chat has taken **{:,} steps**\n· We've walked **{:,.2f} miles**{}".format(
                 total_steps, total_miles, random_barn
             )
         except Exception as err:
@@ -492,7 +492,6 @@ class StridekickCog(commands.Cog, name="Stridekick"):
 
         pad = 0
         step_pad = 0
-        avg_pad = 0
         total_steps = 0
         total_miles = 0
         leader = None
@@ -510,7 +509,7 @@ class StridekickCog(commands.Cog, name="Stridekick"):
 
         details = ""
         try:
-            details = "Today...\n· Cool Chat has taken **{:,.2f} steps**\n· We've walked **{:,.2f} miles**".format(
+            details = "Today...\n· Cool Chat has taken **{:,} steps**\n· We've walked **{:,.2f} miles**".format(
                 total_steps, total_miles
             )
         except Exception as err:
