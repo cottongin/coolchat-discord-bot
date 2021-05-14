@@ -357,7 +357,7 @@ class StridekickCog(commands.Cog, name="Stridekick"):
         embed.add_field(
             name="`Standings`",
             value="\u200b",
-            inline=False
+            inline=True
         )
 
         # standings = ""
@@ -377,12 +377,34 @@ class StridekickCog(commands.Cog, name="Stridekick"):
             #     avg_pad=avg_pad
             # )
             if len(entry['member']['username']) >= len("cottongintonic"):
-                name = entry['member']['username'][:-4] + "…"
+                name = entry['member']['username'][:-5] + "…"
             else:
                 name = entry['member']['username']
             embed.add_field(
                 name="{} {}".format(rank_map.get(entry['rank'], str(entry['rank']) + "."), name).replace(" ", "\u00A0"),
                 value="{stepsTotal:,} ({stepsAverage:,})".format(**entry),
+                inline=True
+            )
+            if entry['rank'] in [1, 2]:
+                embed.add_field(
+                    name="\u200b",
+                    value="\u200b",
+                    inline=True
+                )
+
+        embed.add_field(
+            name="{}. Barnabus".format(challenge['group']['memberCount'] + 1).replace(" ", "\u00A0"),
+            value="0 (Fat Ass)",
+            inline=True
+        )
+
+        num_fields = len(embed.fields)
+        # print(num_fields)
+
+        if num_fields % 3 == 2:
+            embed.add_field(
+                name="\u200b",
+                value="\u200b",
                 inline=True
             )
 
