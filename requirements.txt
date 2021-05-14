@@ -9,3 +9,5 @@ feedparser
 bs4
 lxml
 flag
+warrant
+boto3

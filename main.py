@@ -8,13 +8,14 @@ import os, sys, traceback
 import logging
 import coloredlogs
 
-from dotenv import load_dotenv
+from dotenv import dotenv_values, load_dotenv
 import redis
 
 try:
     # dev build only requires this
     load_dotenv('.env')
     dev_bot = os.getenv("DEVBOT")
+    environvars = os.environ
     logger = logging.getLogger('discord')
     logger.setLevel(logging.DEBUG)
     handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w')
@@ -23,6 +24,7 @@ try:
 except:
     # heroku stores this
     dev_bot = False
+    environvars = os.environ
 
 # LOGGER = logging.getLogger(__name__)
 # coloredlogs.install(level='DEBUG', logger=LOGGER,
@@ -51,6 +53,8 @@ class Bot(commands.Bot):
             self.db = {}
             pass
 
+        self.environs = environvars
+
 def get_prefix(bot, message):
     """A callable Prefix for our bot. This could be edited to allow per server prefixes."""
 
@@ -71,6 +75,7 @@ initial_extensions = [
     'cogs.mock',
     'cogs.weather',
     'cogs.scores',
+    'cogs.stridekick'
 ]
 
 bot = Bot(command_prefix=get_prefix, description='A Cool Chat Bot', case_insensitive=True, intents=intents)
