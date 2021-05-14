@@ -444,5 +444,135 @@ class StridekickCog(commands.Cog, name="Stridekick"):
 
         await ctx.send(embed=embed)
 
+
+    @commands.command(name='skd')
+    async def stridekick_daily(self, ctx):
+        """idk"""
+        base_api = "https://app.stridekick.com/graphql"
+
+        headers = {
+            'authority': 'app.stridekick.com',
+            'apollographql-client-name': 'web:app',
+            'app-state': 'foreground',
+            'source': 'http',
+            'authorization': 'Bearer {}'.format(self.token),
+            'content-type': 'application/json',
+            'accept': '*/*',
+            'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36',
+            'apollographql-client-version': '312',
+            'platform': 'web',
+            'sec-gpc': '1',
+            'origin': 'https://app.stridekick.com',
+            'sec-fetch-site': 'same-origin',
+            'sec-fetch-mode': 'cors',
+            'sec-fetch-dest': 'empty',
+            'accept-language': 'en-US,en;q=0.9',
+        }
+
+        payload = [
+            {
+                "operationName": "Friends",
+                "variables": {
+                    "date": pendulum.today("America/Los_Angeles").format("YYYY-MM-DD"),
+                    "search": ""
+                },
+                "query": "query Friends($date: String, $search: String) {\n  me {\n    id\n    avatar\n    unitType\n    username\n    activity(date: $date) {\n      id\n      distance\n      minutes\n      steps\n          }\n    friends(search: $search) {\n      hits\n      members {\n        id\n        avatar\n        firstName\n        lastName\n        username\n        activity(date: $date) {\n          id\n          distance\n          minutes\n          steps\n                  }\n              }\n          }\n    memberFriends {\n      id\n          }\n      }\n}\n"
+            },
+        ]
+
+        data = requests.post(base_api, json=payload, headers=headers)
+        json = data.json()
+        historic_data = {}
+
+        historic_data[json[0]['data']['me']['username']] = (json[0]['data']['me']['activity']['steps'], json[0]['data']['me']['activity']['distance'], json[0]['data']['me']['avatar'])
+        for member in json[0]['data']['me']['friends']['members']:
+            historic_data[member['username']] = (member['activity']['steps'], member['activity']['distance'], member['avatar'])
+
+        historic_data = dict(sorted(historic_data.items(), key=lambda item: item[1][0], reverse=True))
+
+        pad = 0
+        step_pad = 0
+        avg_pad = 0
+        total_steps = 0
+        total_miles = 0
+        leader = None
+        ranks = {}
+        rank = 1
+        for entry, value in historic_data.items():
+            ranks[entry] = rank
+            rank += 1
+            if not leader:
+                leader = entry
+            total_steps += value[0]
+            total_miles += value[1]
+            pad = max([pad, len(entry)])
+            step_pad = max([step_pad, len("{:,}".format(value[0]))])
+
+        details = ""
+        try:
+            details = "Today...\n· Cool Chat has taken **{:,.2f} steps**\n· We've walked **{:,.2f} miles**".format(
+                total_steps, total_miles
+            )
+        except Exception as err:
+            LOGGER.error(err)
+            pass
+
+        embed = discord.Embed(
+            title="Cool Chat Stridekick Stats for {}".format(
+                pendulum.today("America/Los_Angeles").format("dddd MMMM Do")
+            ),
+            description=details,
+        )
+        embed.set_thumbnail(
+            url=historic_data[leader][2]
+        )
+        embed.add_field(
+            name="`Standings`",
+            value="\u200b",
+            inline=True
+        )
+
+        rank_map = {
+            1: "🥇",
+            2: "🥈",
+            3: "🥉"
+        }
+
+        for person, entry in historic_data.items():
+            if len(person) >= len("cottongintoni"):
+                name = person[:-5] + "…"
+            else:
+                name = person
+            embed.add_field(
+                name="{} {}".format(rank_map.get(ranks[person], str(ranks[person]) + "."), name).replace(" ", "\u00A0"),
+                value="{:,} ({:,} mi)".format(entry[0], entry[1]),
+                inline=True
+            )
+            if ranks[person] in [1, 2]:
+                embed.add_field(
+                    name="\u200b",
+                    value="\u200b",
+                    inline=True
+                )
+
+        embed.add_field(
+            name="{}. Barnabus".format(len(historic_data) + 1).replace(" ", "\u00A0"),
+            value="0 (Fat Ass is napping)",
+            inline=True
+        )
+
+        num_fields = len(embed.fields)
+        # print(num_fields)
+
+        if num_fields % 3 == 2:
+            embed.add_field(
+                name="\u200b",
+                value="\u200b",
+                inline=True
+            )
+
+
+        await ctx.send(embed=embed)
+
 def setup(bot):
     bot.add_cog(StridekickCog(bot))
