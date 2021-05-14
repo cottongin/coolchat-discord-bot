@@ -54,12 +54,12 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
             ).format(
                 query=required_input,
                 api_key=api_key
-        ))
+            )
+        )
 
         f = discord.File(image, filename="wa.png")
         await ctx.send(file=f)
 
-    
 
     @commands.command(name='kale')
     async def have_more_kale(self, ctx):
@@ -189,7 +189,7 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
             while True:
                 try:
                     reaction, user = await self.bot.wait_for(
-                        "reaction_add", timeout=60*5, check=check)
+                        "reaction_add", timeout=60 * 5, check=check)
                     # waiting for a reaction to be added - times out after x
                     # seconds, 60 in this example
 
@@ -241,7 +241,7 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
 
 
     @commands.command(name='pick', aliases=['choose', 'random', 'choice'])
-    async def pick_something_randomly(self, ctx, *, optional_input: str=None):
+    async def pick_something_randomly(self, ctx, *, optional_input: str = None):
         """Command to pick something from user input at random"""
 
         if not optional_input:
@@ -264,10 +264,12 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
     async def show_source(self, ctx):
         """Command which shows my source code repository link."""
 
-        embed = discord.Embed(title='My Source Code on GitHub',
-                              description='@cottongin maintains me',
-                              colour=0xFEFEFE,
-                              url="https://github.com/cottongin/coolchat-discord-bot")
+        embed = discord.Embed(
+            title='My Source Code on GitHub',
+            description='@cottongin maintains me',
+            colour=0xFEFEFE,
+            url="https://github.com/cottongin/coolchat-discord-bot"
+        )
 
         embed.set_thumbnail(url="https://avatars2.githubusercontent.com/u/782294?s=460&v=4")
         embed.set_footer(text="https://github.com/cottongin/coolchat-discord-bot")
@@ -276,8 +278,10 @@ class MiscCog(commands.Cog, name="Miscellaneous"):
 
     @commands.command(name='seen', aliases=['last'])
     @commands.cooldown(1, 5, commands.BucketType.user)
-    async def seen_member(self, ctx,
-                              member: typing.Optional[discord.Member] = None):
+    async def seen_member(
+        self, ctx,
+        member: typing.Optional[discord.Member] = None
+    ):
         """Tries to find the last/most recent message from a user
         e.g. seen @ra
         """
