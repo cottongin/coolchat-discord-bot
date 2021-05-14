@@ -354,19 +354,37 @@ class StridekickCog(commands.Cog, name="Stridekick"):
             avg_pad = max([avg_pad, len("{:,}".format(entry['stepsAverage']))])
             step_pad = max([step_pad, len("{:,}".format(entry['stepsTotal']))])
 
-        standings = ""
-        for entry in lb_list:
-            standings += "`{rank:>2}. {name:{pad}}\t{stepsTotal:>{step_pad},}\t{stepsAverage:>{avg_pad},}`\n".format(
-                **entry,
-                name=entry['member']['username'],
-                pad=pad,
-                step_pad=step_pad,
-                avg_pad=avg_pad
-            )
         embed.add_field(
-            name="`Standings (Total Steps | Average)`",
-            value=standings
+            name="`Standings`",
+            value="\u200b",
+            inline=False
         )
+
+        # standings = ""
+
+        rank_map = {
+            1: "🥇",
+            2: "🥈",
+            3: "🥉"
+        }
+
+        for entry in lb_list:
+            # standings += "`{rank:>2}. {name:{pad}}\t{stepsTotal:>{step_pad},}\t{stepsAverage:>{avg_pad},}`\n".format(
+            #     **entry,
+            #     name=entry['member']['username'],
+            #     pad=pad,
+            #     step_pad=step_pad,
+            #     avg_pad=avg_pad
+            # )
+            if len(entry['member']['username']) >= len("cottongintonic"):
+                name = entry['member']['username'][:-4] + "…"
+            else:
+                name = entry['member']['username']
+            embed.add_field(
+                name="{} {}".format(rank_map.get(entry['rank'], str(entry['rank']) + "."), name).replace(" ", "\u00A0"),
+                value="{stepsTotal:,} ({stepsAverage:,})".format(**entry),
+                inline=True
+            )
 
 
         await ctx.send(embed=embed)
