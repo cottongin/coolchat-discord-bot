@@ -323,7 +323,11 @@ class ScoresCog(commands.Cog, name="Scores"):
                 msg_hash = hash(gid + message)
                 if msg_hash not in self.dupes:
                     for channel in self.monitored:
-                        await self.bot.get_channel(channel).send(embed=embed)
+                        try:
+                            await self.bot.get_channel(channel).send(embed=embed)
+                        except AttributeError as err:
+                            LOGGER.error(f"[3c] {err}")
+                            pass
                     self.dupes.append(msg_hash)
                 self.games_start.remove(gid)
 
@@ -364,7 +368,11 @@ class ScoresCog(commands.Cog, name="Scores"):
                 msg_hash = hash(gid + message)
                 if msg_hash not in self.dupes:
                     for channel in self.monitored:
-                        await self.bot.get_channel(channel).send(embed=embed)
+                        try:
+                            await self.bot.get_channel(channel).send(embed=embed)
+                        except AttributeError as err:
+                            LOGGER.error(f"[3b] {err}")
+                            pass
                     self.dupes.append(msg_hash)
                 self.games_end.remove(gid)
 
@@ -599,7 +607,11 @@ class ScoresCog(commands.Cog, name="Scores"):
                     msg_hash = hash(gid + message)
                     if msg_hash not in self.dupes:
                         for channel in self.monitored:
-                            await self.bot.get_channel(channel).send(embed=embed)
+                            try:
+                                await self.bot.get_channel(channel).send(embed=embed)
+                            except AttributeError as err:
+                                LOGGER.error(f"[3a] {err}")
+                                pass
                         self.dupes.append(msg_hash)
                 del scoring_plays
                 if swap:
