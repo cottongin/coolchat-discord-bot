@@ -425,11 +425,11 @@ class StridekickCog(commands.Cog, name="Stridekick"):
                     inline=True
                 )
 
-        embed.add_field(
-            name="{}. Barnabus".format(challenge['group']['memberCount'] + 1).replace(" ", "\u00A0"),
-            value="0 (Fat Ass)",
-            inline=True
-        )
+        # embed.add_field(
+        #     name="{}. Barnabus".format(challenge['group']['memberCount'] + 1).replace(" ", "\u00A0"),
+        #     value="0 (Fat Ass)",
+        #     inline=True
+        # )
 
         num_fields = len(embed.fields)
         # print(num_fields)
@@ -554,11 +554,11 @@ class StridekickCog(commands.Cog, name="Stridekick"):
                     inline=True
                 )
 
-        embed.add_field(
-            name="{}. Barnabus".format(len(historic_data) + 1).replace(" ", "\u00A0"),
-            value="0 (Fat Ass is napping)",
-            inline=True
-        )
+        # embed.add_field(
+        #     name="{}. Barnabus".format(len(historic_data) + 1).replace(" ", "\u00A0"),
+        #     value="0 (Fat Ass is napping)",
+        #     inline=True
+        # )
 
         num_fields = len(embed.fields)
         # print(num_fields)
